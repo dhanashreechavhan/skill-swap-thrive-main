@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test - Explore Skills</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .result { background: #f5f5f5; padding: 10px; margin: 10px 0; }
+        .error { background: #ffebee; border-left: 4px solid #f44336; }
+        .success { background: #e8f5e8; border-left: 4px solid #4caf50; }
+        button { padding: 10px 15px; margin: 5px; background: #007cba; color: white; border: none; cursor: pointer; }
+        button:hover { background: #005a8a; }
+    </style>
+</head>
+<body>
+    <h1>API Test - Explore Skills Functionality</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Basic Skills Fetch</h2>
+        <button onclick="testBasicSkillsFetch()">Test Basic Fetch</button>
+        <div id="test1-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 2: Search Functionality</h2>
+        <input type="text" id="searchInput" placeholder="Enter search term (e.g., 'python')" value="python">
+        <button onclick="testSearch()">Test Search</button>
+        <div id="test2-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 3: Category Filter</h2>
+        <select id="categorySelect">
+            <option value="all">All Categories</option>
+            <option value="technology">Technology</option>
+            <option value="language">Language</option>
+            <option value="art">Art</option>
+            <option value="music">Music</option>
+        </select>
+        <button onclick="testCategoryFilter()">Test Category Filter</button>
+        <div id="test3-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 4: Combined Filters</h2>
+        <button onclick="testCombinedFilters()">Test Search + Category + Level</button>
+        <div id="test4-result" class="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+
+        async function testBasicSkillsFetch() {
+            const resultDiv = document.getElementById('test1-result');
+            resultDiv.innerHTML = '<p>Testing basic skills fetch...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/skills`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h3>✅ Success!</h3>
+                        <p><strong>Found ${data.skills?.length || 0} skills</strong></p>
+                        <p>Pagination: Page ${data.pagination?.currentPage} of ${data.pagination?.totalPages}</p>
+                        <p>Total items: ${data.pagination?.totalItems}</p>
+                        <details>
+                            <summary>Sample Skills</summary>
+                            <pre>${JSON.stringify(data.skills?.slice(0, 2), null, 2)}</pre>
+                        </details>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `<h3>❌ Error</h3><p>${JSON.stringify(data)}</p>`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `<h3>❌ Network Error</h3><p>${error.message}</p>`;
+            }
+        }
+
+        async function testSearch() {
+            const resultDiv = document.getElementById('test2-result');
+            const searchTerm = document.getElementById('searchInput').value;
+            resultDiv.innerHTML = '<p>Testing search functionality...</p>';
+            
+            try {
+                const params = new URLSearchParams({ search: searchTerm });
+                const response = await fetch(`${API_BASE}/skills?${params}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h3>✅ Search Results for "${searchTerm}"</h3>
+                        <p><strong>Found ${data.skills?.length || 0} skills</strong></p>
+                        ${data.skills?.length > 0 ? `
+                            <ul>
+                                ${data.skills.slice(0, 3).map(skill => `
+                                    <li><strong>${skill.name}</strong> (${skill.category}) - ${skill.description}</li>
+                                `).join('')}
+                            </ul>
+                        ` : '<p>No skills found matching search criteria</p>'}
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `<h3>❌ Error</h3><p>${JSON.stringify(data)}</p>`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `<h3>❌ Network Error</h3><p>${error.message}</p>`;
+            }
+        }
+
+        async function testCategoryFilter() {
+            const resultDiv = document.getElementById('test3-result');
+            const category = document.getElementById('categorySelect').value;
+            resultDiv.innerHTML = '<p>Testing category filter...</p>';
+            
+            try {
+                const params = new URLSearchParams();
+                if (category !== 'all') params.append('category', category);
+                
+                const response = await fetch(`${API_BASE}/skills?${params}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h3>✅ Category Filter: ${category}</h3>
+                        <p><strong>Found ${data.skills?.length || 0} skills</strong></p>
+                        ${data.skills?.length > 0 ? `
+                            <p>Categories found: ${[...new Set(data.skills.map(s => s.category))].join(', ')}</p>
+                        ` : '<p>No skills found in this category</p>'}
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `<h3>❌ Error</h3><p>${JSON.stringify(data)}</p>`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `<h3>❌ Network Error</h3><p>${error.message}</p>`;
+            }
+        }
+
+        async function testCombinedFilters() {
+            const resultDiv = document.getElementById('test4-result');
+            resultDiv.innerHTML = '<p>Testing combined filters...</p>';
+            
+            try {
+                const params = new URLSearchParams({
+                    search: 'programming',
+                    category: 'technology',
+                    level: 'intermediate'
+                });
+                
+                const response = await fetch(`${API_BASE}/skills?${params}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h3>✅ Combined Filters Test</h3>
+                        <p>Search: "programming", Category: "technology", Level: "intermediate"</p>
+                        <p><strong>Found ${data.skills?.length || 0} skills</strong></p>
+                        ${data.skills?.length > 0 ? `
+                            <ul>
+                                ${data.skills.map(skill => `
+                                    <li><strong>${skill.name}</strong> - ${skill.level} - ${skill.category}</li>
+                                `).join('')}
+                            </ul>
+                        ` : '<p>No skills found matching all criteria</p>'}
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `<h3>❌ Error</h3><p>${JSON.stringify(data)}</p>`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `<h3>❌ Network Error</h3><p>${error.message}</p>`;
+            }
+        }
+
+        // Auto-run basic test on page load
+        window.onload = () => {
+            testBasicSkillsFetch();
+        };
+    </script>
+</body>
+</html>

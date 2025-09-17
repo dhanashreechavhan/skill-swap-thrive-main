@@ -7,8 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Search, Filter, Star, Calendar, MapPin, Grid, List, ArrowRight, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { apiService, buildAssetUrl } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 const ExploreSkills = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -29,6 +31,17 @@ const ExploreSkills = () => {
     itemsPerPage: 20
   });
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+
+  // Initialize search term from URL parameters
+  useEffect(() => {
+    const urlSearch = searchParams.get('search');
+    if (urlSearch) {
+      setSearchTerm(urlSearch);
+    }
+  }, [searchParams]);
 
   const categories = [
     "All Categories",
@@ -59,8 +72,9 @@ const ExploreSkills = () => {
       const result = await apiService.getSkills(params);
       
       if (result.data) {
-        setSkillProviders(result.data.skills || []);
-        setPagination(result.data.pagination || pagination);
+        const responseData = result.data as any;
+        setSkillProviders(responseData.skills || []);
+        setPagination(responseData.pagination || pagination);
       } else {
         toast({
           title: "Error",
@@ -82,9 +96,9 @@ const ExploreSkills = () => {
   // Load data on component mount and when filters change
   useEffect(() => {
     fetchSkills();
-  }, [searchTerm, filters, pagination.currentPage]);
+  }, [filters, pagination.currentPage]);
 
-  // Debounced search
+  // Debounced search - separate from other filters
   useEffect(() => {
     const timer = setTimeout(() => {
       if (pagination.currentPage === 1) {
@@ -92,19 +106,90 @@ const ExploreSkills = () => {
       } else {
         setPagination(prev => ({ ...prev, currentPage: 1 }));
       }
-    }, 500);
+    }, 300); // Reduced debounce time for better UX
 
     return () => clearTimeout(timer);
   }, [searchTerm]);
+
+  // Handle action functions
+  const handleRequestSession = async (skill: any) => {
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to request a session",
+        variant: "destructive"
+      });
+      navigate('/login');
+      return;
+    }
+    
+    try {
+      // Create a schedule request
+      const result = await apiService.createSchedule({
+        teacherId: skill.offeredBy._id,
+        skillId: skill._id,
+        type: 'learning',
+        status: 'pending',
+        notes: `Learning session request for ${skill.name}`
+      });
+      
+      if (result.data) {
+        toast({
+          title: "Session Requested",
+          description: `Your request for ${skill.name} has been sent!`,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: result.error || "Failed to request session",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An error occurred while requesting the session",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleSendMessage = (skill: any) => {
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to send messages",
+        variant: "destructive"
+      });
+      navigate('/login');
+      return;
+    }
+    
+    navigate('/messages', { 
+      state: { 
+        recipientId: skill.offeredBy._id,
+        recipientName: skill.offeredBy.name,
+        skillContext: skill.name
+      } 
+    });
+  };
+
+  const handleViewProfile = (skill: any) => {
+    navigate(`/profile/${skill.offeredBy._id}`);
+  };
 
   const handleFilterChange = (key: string, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
     setPagination(prev => ({ ...prev, currentPage: 1 }));
   };
 
+  // Handle rating and price range filters
+  const [priceRange, setPriceRange] = useState([25, 100]);
+  const [minRating, setMinRating] = useState('all');
+
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      <Header isLoggedIn={!!user} />
       
       <main className="container py-8">
         {/* Header */}
@@ -192,11 +277,12 @@ const ExploreSkills = () => {
                 {/* Rating */}
                 <div>
                   <label className="text-sm font-medium mb-2 block">Minimum Rating</label>
-                  <Select>
+                  <Select value={minRating} onValueChange={setMinRating}>
                     <SelectTrigger>
                       <SelectValue placeholder="Any rating" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="all">Any rating</SelectItem>
                       <SelectItem value="4.8">4.8+ ⭐</SelectItem>
                       <SelectItem value="4.5">4.5+ ⭐</SelectItem>
                       <SelectItem value="4.0">4.0+ ⭐</SelectItem>
@@ -208,15 +294,16 @@ const ExploreSkills = () => {
                 <div>
                   <label className="text-sm font-medium mb-2 block">Hourly Rate ($)</label>
                   <Slider
-                    defaultValue={[25, 100]}
+                    value={priceRange}
+                    onValueChange={setPriceRange}
                     max={200}
                     min={0}
                     step={5}
                     className="mt-2"
                   />
                   <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                    <span>$0</span>
-                    <span>$200+</span>
+                    <span>${priceRange[0]}</span>
+                    <span>${priceRange[1]}+</span>
                   </div>
                 </div>
 
@@ -318,23 +405,41 @@ const ExploreSkills = () => {
                           <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
                             <div className="flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
-                              {skill.availability}
+                              {skill.availability || 'Available'}
                             </div>
                             <div className="flex items-center gap-1">
                               <MapPin className="h-3 w-3" />
                               {skill.offeredBy?.profile?.location || 'Location not specified'}
                             </div>
+                            {skill.offeredBy?.ratings?.average && (
+                              <div className="flex items-center gap-1">
+                                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                                {skill.offeredBy.ratings.average.toFixed(1)} ({skill.offeredBy.ratings.count})
+                              </div>
+                            )}
                           </div>
                           
                           {/* Actions */}
                           <div className="flex gap-2">
-                            <Button size="sm" className="flex-1">
+                            <Button 
+                              size="sm" 
+                              className="flex-1"
+                              onClick={() => handleRequestSession(skill)}
+                            >
                               Request Session
                             </Button>
-                            <Button variant="outline" size="sm">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleSendMessage(skill)}
+                            >
                               Message
                             </Button>
-                            <Button variant="ghost" size="sm">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleViewProfile(skill)}
+                            >
                               View Profile
                               <ArrowRight className="ml-1 h-3 w-3" />
                             </Button>
