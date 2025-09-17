@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { BookOpen, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import Logo from "@/components/Logo";
 
 const Header = ({ isLoggedIn = false, hideDashboard = false }: { isLoggedIn?: boolean; hideDashboard?: boolean }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -18,10 +19,7 @@ const Header = ({ isLoggedIn = false, hideDashboard = false }: { isLoggedIn?: bo
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center space-x-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-primary">
-            <BookOpen className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <span className="text-xl font-bold text-foreground">SkillSwap</span>
+          <Logo size="md" />
         </Link>
 
         {/* Desktop Navigation */}

@@ -150,7 +150,7 @@ swap-learn-thrive/
 
 ### Frontend Deployment
 1. Build the project: `npm run build`
-2. Deploy the `dist` folder to platforms like Vercel, Netlify, or Lovable
+2. Deploy the `dist` folder to platforms like Vercel, Netlify, or AWS S3
 3. Update environment variables for production
 
 ### Backend Deployment
@@ -173,9 +173,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- Built with [Lovable](https://lovable.dev)
 - UI components from [shadcn/ui](https://ui.shadcn.com/)
 - Icons from [Lucide React](https://lucide.dev/)
+- Built with modern web technologies
 
 ## 📞 Support
 
@@ -183,4 +183,4 @@ If you have any questions or need help with setup, please open an issue or conta
 
 ---
 
-**Project URL**: https://lovable.dev/projects/33e627d4-4bda-41dd-ad8e-b5d4cc78787f
+**Repository**: https://github.com/MJ-Sec4yoU/swap-learn-thrive

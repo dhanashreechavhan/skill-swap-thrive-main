@@ -1,5 +1,6 @@
 import { BookOpen } from "lucide-react";
 import { Link } from "react-router-dom";
+import Logo from "@/components/Logo";
 
 const Footer = () => {
   const footerSections = [
@@ -48,10 +49,7 @@ const Footer = () => {
           {/* Logo and Description */}
           <div className="lg:col-span-1">
             <Link to="/" className="flex items-center space-x-2 mb-4">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-primary">
-                <BookOpen className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <span className="text-xl font-bold text-foreground">SkillSwap</span>
+              <Logo size="md" />
             </Link>
             <p className="text-sm text-muted-foreground mb-4">
               Connect, learn, and grow with peer-to-peer skill exchange. Build expertise through collaborative learning.
@@ -81,7 +79,7 @@ const Footer = () => {
         {/* Bottom Section */}
         <div className="flex flex-col md:flex-row items-center justify-between pt-8 mt-8 border-t border-border">
           <p className="text-sm text-muted-foreground">
-            © 2024 SkillSwap. All rights reserved.
+            © 2024 SwapLearnThrive. All rights reserved.
           </p>
           <div className="flex items-center space-x-4 mt-4 md:mt-0">
             <span className="text-sm text-muted-foreground">Follow us:</span>

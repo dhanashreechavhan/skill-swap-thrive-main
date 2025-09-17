@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { BookOpen, Eye, EyeOff } from "lucide-react";
+import Logo from "@/components/Logo";
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -130,10 +131,7 @@ const LoginValidated = () => {
         {/* Logo */}
         <div className="flex items-center justify-center mb-8">
           <Link to="/" className="flex items-center space-x-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white">
-              <BookOpen className="h-6 w-6 text-primary" />
-            </div>
-            <span className="text-2xl font-bold text-white">SkillSwap</span>
+            <Logo size="lg" textClassName="text-white" />
           </Link>
         </div>
 
