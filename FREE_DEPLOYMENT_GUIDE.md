@@ -217,9 +217,14 @@ After deploying your backend:
    - Confirm network access rules
 
 4. **Build Failures**:
-   - Check build logs in Netlify
+   - Check build logs in Netlify/Render
    - Ensure all dependencies are correctly specified
    - Verify environment variables are set
+
+5. **Backend Deployment Issues**:
+   - Make sure your Render service is configured to use the `backend` directory as root
+   - Verify that build and start commands are correct (`npm install` and `npm start`)
+   - Check that all required environment variables are set
 
 ## 📈 Next Steps
 
