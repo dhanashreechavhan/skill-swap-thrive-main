@@ -261,6 +261,8 @@ After deploying your backend:
    - If you encounter syntax errors during deployment, check that all JavaScript files are properly closed
    - Ensure all functions and objects have proper opening and closing brackets
    - Verify that all route files export their routers correctly
+   - Check for extra or missing closing braces/parentheses that can cause runtime errors
+   - The recent fix addressed a missing closing parenthesis in the search route function in users.js
 
 ## 📈 Next Steps
 
