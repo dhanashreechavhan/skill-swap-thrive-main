@@ -51,6 +51,7 @@ const productionOrigins = [
   // 'https://app.yourapp.com',
   'https://skillswapthrive.netlify.app', // Your Netlify frontend URL
   'https://skillswapthrive.netlify.app/', // Your Netlify frontend URL with trailing slash
+  'https://skillswapthrive.netlify.app', // Duplicate without trailing slash for redundancy
 ].filter(Boolean); // Remove undefined/empty values
 
 const allowedOrigins = isDevelopment ? developmentOrigins : productionOrigins;

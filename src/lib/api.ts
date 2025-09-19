@@ -1,6 +1,10 @@
 // Configure API and asset bases via Vite env; fall back to sensible dev defaults
-const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000/api';
-const ASSET_BASE_URL = (import.meta as any).env?.VITE_ASSET_BASE || `http://${window.location.hostname}:5000`;
+// Configure API and asset bases via Vite env; fall back to sensible dev defaults
+export const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000/api';
+// For asset URLs, we need to derive from API base in production but use localhost in development
+const ASSET_BASE_URL = (import.meta as any).env?.VITE_APP_ENV === 'production' 
+  ? API_BASE_URL.replace('/api', '') 
+  : `http://${window.location.hostname}:5000`;
 
 export const buildAssetUrl = (relativePath: string, cacheBust: boolean = false): string => {
   const clean = relativePath.startsWith('/') ? relativePath.slice(1) : relativePath;

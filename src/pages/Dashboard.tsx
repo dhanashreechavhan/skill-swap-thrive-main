@@ -20,7 +20,7 @@ import {
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
-import { apiService, buildAssetUrl } from "@/lib/api";
+import { apiService, buildAssetUrl, API_BASE_URL } from "@/lib/api";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -230,15 +230,24 @@ const Dashboard = () => {
                   <div className="relative">
                     {profile?.profile?.avatar ? (
                       <>
-                        {console.log('Avatar URL:', buildAssetUrl(profile.profile.avatar, true))}
+                        {console.log('Avatar path from API:', profile.profile.avatar)}
+                        {console.log('Constructed asset URL:', buildAssetUrl(profile.profile.avatar, true))}
                         <img
                           src={buildAssetUrl(profile.profile.avatar, true)}
                           alt="Avatar"
                           className="w-20 h-20 rounded-full object-cover"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
-                            target.onerror = null;
-                            target.src = '/default-avatar.png'; // fallback avatar image path
+                            console.log('Avatar load error, trying direct path');
+                            // Try direct path as fallback
+                            const baseUrl = API_BASE_URL.replace('/api', '');
+                            if (profile.profile.avatar.startsWith('uploads/')) {
+                              target.onerror = null;
+                              target.src = `${baseUrl}/${profile.profile.avatar}`;
+                            } else {
+                              target.onerror = null;
+                              target.src = `${baseUrl}/uploads/${profile.profile.avatar}`;
+                            }
                           }}
                         />
                       </>
