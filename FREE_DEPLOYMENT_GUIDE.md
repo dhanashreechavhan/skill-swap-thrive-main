@@ -119,28 +119,37 @@ mongodb+srv://skillswap_user:your_password@cluster0.xxxxx.mongodb.net/skillswap?
    - `NODE_ENV` = production
    - `MONGODB_URI` = your MongoDB connection string
    - `JWT_SECRET` = your JWT secret
-   - `FRONTEND_URL` = your Netlify frontend URL
+   - `FRONTEND_URL` = your Netlify frontend URL (e.g., https://your-app.netlify.app)
+   - `FRONTEND_URL_2` = your Netlify frontend URL with www if applicable
 5. Click "Create Web Service"
-
-### Step 4: Configure Custom Domain (Optional)
-1. In Render dashboard, go to your web service
-2. Click "Settings" → "Custom domains"
-3. Add your custom domain
-4. Follow instructions to configure DNS
 
 ## 🔗 4. Connecting Frontend and Backend
 
-### Step 1: Get Your Backend URL
-1. After deploying to Render, you'll get a URL like:
+### Step 1: Get Your URLs
+1. After deploying to Netlify, you'll get a URL like:
+   `https://your-app.netlify.app`
+2. After deploying to Render, you'll get a URL like:
    `https://skillswap-backend.onrender.com`
-2. This is your backend URL
 
-### Step 2: Update Frontend Environment Variables
-1. Go to your Netlify site settings
-2. Go to "Build & deploy" → "Environment"
-3. Update `VITE_API_URL` to your Render backend URL:
-   `https://skillswap-backend.onrender.com/api`
-4. Trigger a new deployment by going to "Deploys" → "Trigger deploy" → "Deploy site"
+### Step 2: Update Environment Variables
+1. **In Netlify**:
+   - Go to your site settings → "Build & deploy" → "Environment"
+   - Update `VITE_API_URL` to your Render backend URL:
+     `https://skillswap-backend.onrender.com/api`
+   - Save changes
+
+2. **In Render**:
+   - Go to your web service → "Environment"
+   - Make sure `FRONTEND_URL` is set to your Netlify frontend URL:
+     `https://your-app.netlify.app`
+   - Save changes
+
+### Step 3: Redeploy Both Services
+1. **Redeploy Netlify site**:
+   - Go to "Deploys" → "Trigger deploy" → "Deploy site"
+
+2. **Redeploy Render service**:
+   - Go to "Manual Deploy" → "Deploy latest commit"
 
 ## 🛠️ 5. Final Configuration
 
@@ -225,6 +234,11 @@ After deploying your backend:
    - Make sure your Render service is configured to use the `backend` directory as root
    - Verify that build and start commands are correct (`npm install` and `npm start`)
    - Check that all required environment variables are set
+
+6. **Content Security Policy (CSP) Errors**:
+   - The frontend's CSP must allow connections to your backend URL
+   - If you change your backend URL, update the CSP in index.html
+   - Make sure to redeploy after updating CSP
 
 ## 📈 Next Steps
 
