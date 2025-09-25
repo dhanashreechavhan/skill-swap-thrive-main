@@ -86,7 +86,7 @@ const securityHeaders = () => {
         scriptSrc: ["'self'"],
         imgSrc: ["'self'", "data:", "https:"],
         fontSrc: ["'self'", "fonts.gstatic.com"],
-        connectSrc: ["'self'"],
+        connectSrc: ["'self'", "http://localhost:8080", "http://127.0.0.1:8080"],
         manifestSrc: ["'self'"],
         mediaSrc: ["'self'"],
         objectSrc: ["'none'"],

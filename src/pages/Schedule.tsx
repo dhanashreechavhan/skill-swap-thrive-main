@@ -284,19 +284,63 @@ const Schedule = () => {
                       )}
                     </div>
                     <div>
-                      <label className="text-sm font-medium mb-2 block">Skill *</label>
+                      <label className="text-sm font-medium mb-2 block">Choose Skill & Teacher *</label>
                       <Select value={editingId ? editForm.skillId : form.skillId} onValueChange={(v) => editingId ? setEditForm({ ...editForm, skillId: v }) : setForm({ ...form, skillId: v })}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select skill" />
+                          <SelectValue placeholder="Select a skill and teacher" />
                         </SelectTrigger>
                         <SelectContent>
-                          {skills.map((sk: any) => (
-                            <SelectItem key={sk._id} value={sk._id}>{sk.name || sk.title || 'Skill'}</SelectItem>
-                          ))}
+                          {skills
+                            .filter((sk: any) => sk.offeredBy && sk.offeredBy.name) // Only show skills with valid teachers
+                            .length === 0 ? (
+                            <div className="p-4 text-center text-muted-foreground text-sm">
+                              No available skills with teachers found.
+                              <br />Please check back later or browse skills to find teachers.
+                            </div>
+                          ) : (
+                            skills
+                              .filter((sk: any) => sk.offeredBy && sk.offeredBy.name)
+                              .map((sk: any) => (
+                              <SelectItem key={sk._id} value={sk._id}>
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{sk.name || sk.title || 'Skill'}</span>
+                                  <span className="text-sm text-muted-foreground">
+                                    by {sk.offeredBy?.name || 'Unknown Teacher'}
+                                    {sk.offeredBy?.profile?.location && ` • ${sk.offeredBy.profile.location}`}
+                                  </span>
+                                </div>
+                              </SelectItem>
+                            ))
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
+
+                  {/* Selected Skill Info */}
+                  {(editingId ? editForm.skillId : form.skillId) && (
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      {(() => {
+                        const selectedSkill = skills.find((sk: any) => sk._id === (editingId ? editForm.skillId : form.skillId));
+                        if (!selectedSkill) return null;
+                        return (
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-medium">
+                              {selectedSkill.offeredBy?.name ? selectedSkill.offeredBy.name.charAt(0).toUpperCase() : 'T'}
+                            </div>
+                            <div>
+                              <p className="font-medium text-blue-900">
+                                You'll be learning {selectedSkill.name} with {selectedSkill.offeredBy?.name || 'Unknown Teacher'}
+                              </p>
+                              <p className="text-sm text-blue-600">
+                                {selectedSkill.offeredBy?.profile?.location || 'Location not specified'} • {selectedSkill.category} • {selectedSkill.level} level
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })()} 
+                    </div>
+                  )}
 
                   <div className="grid md:grid-cols-3 gap-6">
                     <div>

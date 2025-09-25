@@ -255,12 +255,41 @@ userSchema.methods.calculateMatchScore = function(otherUser) {
   let score = 0;
   let factors = 0;
   
-  // Skill overlap
-  const myTeaching = this.skillsTeaching.map(s => s.skill.toLowerCase());
-  const theirLearning = otherUser.skillsLearning.map(s => s.skill.toLowerCase());
+  // Skill overlap - handle both old string format and new object format
+  const myTeaching = this.skillsTeaching.map(s => {
+    if (typeof s === 'string') return s.toLowerCase();
+    if (typeof s === 'object' && s.skill) return s.skill.toLowerCase();
+    return '';
+  }).filter(s => s.length > 0);
+  
+  const theirLearning = otherUser.skillsLearning.map(s => {
+    if (typeof s === 'string') return s.toLowerCase();
+    if (typeof s === 'object' && s.skill) return s.skill.toLowerCase();
+    return '';
+  }).filter(s => s.length > 0);
+  
   const skillOverlap = myTeaching.filter(skill => theirLearning.includes(skill)).length;
   if (skillOverlap > 0) {
     score += skillOverlap * 30; // 30 points per matching skill
+    factors++;
+  }
+  
+  // Also check reverse direction - what they teach that I want to learn
+  const theirTeaching = otherUser.skillsTeaching.map(s => {
+    if (typeof s === 'string') return s.toLowerCase();
+    if (typeof s === 'object' && s.skill) return s.skill.toLowerCase();
+    return '';
+  }).filter(s => s.length > 0);
+  
+  const myLearning = this.skillsLearning.map(s => {
+    if (typeof s === 'string') return s.toLowerCase();
+    if (typeof s === 'object' && s.skill) return s.skill.toLowerCase();
+    return '';
+  }).filter(s => s.length > 0);
+  
+  const reverseSkillOverlap = theirTeaching.filter(skill => myLearning.includes(skill)).length;
+  if (reverseSkillOverlap > 0) {
+    score += reverseSkillOverlap * 30; // 30 points per matching skill
     factors++;
   }
   

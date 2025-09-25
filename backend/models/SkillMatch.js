@@ -68,18 +68,19 @@ skillMatchSchema.statics.calculateMatchScore = function(student, teacher, skill)
   
   // Extract skill names from both arrays (handle both string and object formats)
   const teacherSkillNames = teacherSkills.map(s => 
-    typeof s === 'string' ? s : (s.skill || '')
-  );
+    typeof s === 'string' ? s.toLowerCase() : (s.skill ? s.skill.toLowerCase() : '')
+  ).filter(s => s.length > 0);
+  
   const studentSkillNames = studentNeeds.map(s => 
-    typeof s === 'string' ? s : (s.skill || '')
-  );
+    typeof s === 'string' ? s.toLowerCase() : (s.skill ? s.skill.toLowerCase() : '')
+  ).filter(s => s.length > 0);
   
   // Check if teacher offers this skill and student wants to learn it
   const teacherOffersSkill = teacherSkillNames.some(name => 
-    name.toLowerCase() === skill.name.toLowerCase()
+    name === skill.name.toLowerCase()
   );
   const studentWantsSkill = studentSkillNames.some(name => 
-    name.toLowerCase() === skill.name.toLowerCase()
+    name === skill.name.toLowerCase()
   );
   
   // The algorithm should check if student wants to learn what teacher offers
@@ -108,7 +109,7 @@ skillMatchSchema.statics.calculateMatchScore = function(student, teacher, skill)
   }
 
   // Rating score (25% weight)
-  const teacherRating = teacher.averageRating || 0;
+  const teacherRating = teacher.ratings?.average || 0;
   if (teacherRating > 0) {
     factors.ratingScore = (teacherRating / 5) * 100;
     score += (teacherRating / 5) * 25;
@@ -122,11 +123,13 @@ skillMatchSchema.statics.calculateMatchScore = function(student, teacher, skill)
     'Expert': { 'Beginner': 20, 'Intermediate': 60, 'Advanced': 80, 'Expert': 100 }
   };
   
-  const studentLevel = 'Beginner'; // Default or get from profile
+  // Get student's target level for this skill
+  const studentTargetLevel = 'Beginner'; // Default or extract from student's skill data
+  // Get teacher's level for this skill
   const teacherLevel = skill.level || 'Beginner';
   
-  if (levelScore[studentLevel] && levelScore[studentLevel][teacherLevel]) {
-    factors.experienceLevel = levelScore[studentLevel][teacherLevel];
+  if (levelScore[studentTargetLevel] && levelScore[studentTargetLevel][teacherLevel]) {
+    factors.experienceLevel = levelScore[studentTargetLevel][teacherLevel];
     score += (factors.experienceLevel / 100) * 15;
   }
 

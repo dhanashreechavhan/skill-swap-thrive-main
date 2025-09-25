@@ -6,6 +6,52 @@ const SkillMatch = require('../models/SkillMatch');
 const Rating = require('../models/Rating');
 const { auth } = require('../middleware/auth');
 
+// Function to categorize skills based on skill name
+function categorizeSkill(skillName) {
+  const skillLower = skillName.toLowerCase();
+  
+  // Technology category
+  const techKeywords = ['javascript', 'python', 'java', 'react', 'node', 'html', 'css', 'programming', 'coding', 'software', 'web', 'app', 'development', 'database', 'sql', 'api', 'framework', 'library', 'algorithm', 'data structure', 'machine learning', 'ai', 'artificial intelligence', 'cloud', 'devops', 'git', 'github', 'typescript', 'angular', 'vue', 'php', 'c++', 'c#', 'swift', 'kotlin', 'flutter', 'django', 'flask', 'spring', 'laravel', 'mongodb', 'mysql', 'postgresql', 'redis', 'docker', 'kubernetes', 'aws', 'azure', 'gcp', 'blockchain', 'cybersecurity', 'testing', 'automation'];
+  
+  // Language category
+  const languageKeywords = ['english', 'spanish', 'french', 'german', 'chinese', 'japanese', 'korean', 'italian', 'portuguese', 'russian', 'arabic', 'hindi', 'language', 'grammar', 'vocabulary', 'pronunciation', 'speaking', 'writing', 'reading', 'listening', 'translation', 'interpretation'];
+  
+  // Art category
+  const artKeywords = ['drawing', 'painting', 'sculpture', 'photography', 'design', 'graphic design', 'illustration', 'animation', 'digital art', 'traditional art', 'watercolor', 'oil painting', 'acrylic', 'sketching', 'portrait', 'landscape', 'abstract', 'fine art', 'visual art', 'creative', 'artistic'];
+  
+  // Music category
+  const musicKeywords = ['piano', 'guitar', 'violin', 'drums', 'singing', 'vocal', 'music theory', 'composition', 'songwriting', 'music production', 'audio', 'sound', 'recording', 'mixing', 'mastering', 'instrument', 'melody', 'harmony', 'rhythm', 'classical', 'jazz', 'rock', 'pop', 'electronic', 'hip hop'];
+  
+  // Sports category
+  const sportsKeywords = ['football', 'soccer', 'basketball', 'tennis', 'swimming', 'running', 'cycling', 'yoga', 'fitness', 'gym', 'workout', 'exercise', 'training', 'athletics', 'baseball', 'volleyball', 'badminton', 'table tennis', 'martial arts', 'boxing', 'wrestling', 'golf', 'hockey', 'cricket', 'rugby', 'skiing', 'snowboarding', 'surfing', 'climbing', 'hiking', 'dance', 'ballet', 'pilates', 'crossfit', 'bodybuilding', 'powerlifting'];
+  
+  // Cooking category
+  const cookingKeywords = ['cooking', 'baking', 'recipe', 'culinary', 'chef', 'kitchen', 'food', 'cuisine', 'nutrition', 'diet', 'meal prep', 'pastry', 'dessert', 'bread', 'cake', 'pasta', 'sauce', 'grilling', 'roasting', 'frying', 'steaming', 'fermentation', 'wine', 'cocktail', 'beverage', 'organic', 'vegan', 'vegetarian'];
+  
+  // Check each category
+  if (techKeywords.some(keyword => skillLower.includes(keyword))) {
+    return 'Technology';
+  }
+  if (languageKeywords.some(keyword => skillLower.includes(keyword))) {
+    return 'Language';
+  }
+  if (artKeywords.some(keyword => skillLower.includes(keyword))) {
+    return 'Art';
+  }
+  if (musicKeywords.some(keyword => skillLower.includes(keyword))) {
+    return 'Music';
+  }
+  if (sportsKeywords.some(keyword => skillLower.includes(keyword))) {
+    return 'Sports';
+  }
+  if (cookingKeywords.some(keyword => skillLower.includes(keyword))) {
+    return 'Cooking';
+  }
+  
+  // Default to 'Other' if no specific category found
+  return 'Other';
+}
+
 // Simple test route
 router.get('/test', (req, res) => {
   res.json({ message: 'Matching routes working!' });
@@ -83,7 +129,10 @@ router.get('/matches', auth, async (req, res) => {
     });
   } catch (error) {
     console.error('Get matches error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ 
+      message: 'We encountered an issue while loading your matches. Please refresh the page and try again.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
@@ -94,17 +143,24 @@ router.post('/generate', auth, async (req, res) => {
     const user = await User.findById(userId);
     
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ 
+        message: 'Your user profile could not be found. Please try logging in again.',
+        field: 'user'
+      });
     }
     
     // Clear existing active matches for this user
     await SkillMatch.deleteMany({ student: userId, status: 'Active' });
     
-    // Find skills user wants to learn
+    // Find skills user wants to learn - handle both old string format and new object format
     const skillsToMatch = user.skillsLearning || [];
     
     if (skillsToMatch.length === 0) {
-      return res.json({ message: 'No skills to match. Please update your learning interests.', error: 'NO_LEARNING_SKILLS' });
+      return res.json({ 
+        message: 'No learning interests found in your profile. Please add skills you want to learn to discover potential teachers.', 
+        error: 'NO_LEARNING_SKILLS',
+        suggestion: 'Visit your profile page to add learning interests'
+      });
     }
     
     const newMatches = [];
@@ -123,33 +179,113 @@ router.post('/generate', auth, async (req, res) => {
         continue; // Skip invalid skill formats
       }
       
-      // Find skills offered by other users
-      // Escape special regex characters to prevent invalid regex patterns
-      const escapedSkillName = skillName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const availableSkills = await Skill.find({
-        name: new RegExp(escapedSkillName, 'i'),
-        availability: 'Available',
-        offeredBy: { $ne: userId } // Exclude user's own skills
-      }).populate('offeredBy');
+      // Find users who teach this skill
+      const teachers = await User.find({
+        'skillsTeaching.skill': { $regex: new RegExp(skillName, 'i') },
+        _id: { $ne: userId } // Exclude user's own skills
+      });
       
-      totalAvailableSkills += availableSkills.length;
+      totalAvailableSkills += teachers.length;
       
-      // Generate matches for each available skill
-      for (const skill of availableSkills) {
-        const teacher = skill.offeredBy;
-        
+      // Generate matches for each teacher
+      for (const teacher of teachers) {
         // Skip if teacher is banned
         if (teacher.profile?.isBanned) continue;
         
-        // Calculate match score
-        const matchData = SkillMatch.calculateMatchScore(user, teacher, skill);
+        // Calculate match score using the SkillMatch static method
+        // First, find or create a skill object for this matching skill
+        let skillDoc = await Skill.findOne({ name: { $regex: new RegExp(skillName, 'i') } });
+        
+        if (!skillDoc) {
+          // Find the specific skill in teacher's skills for level info
+          const matchingSkill = teacher.skillsTeaching.find(s => 
+            (typeof s === 'string' ? s : s.skill)?.toLowerCase() === skillName.toLowerCase()
+          );
+          
+          // Create a basic skill document if it doesn't exist
+          skillDoc = new Skill({
+            name: skillName,
+            description: `Skill: ${skillName}`,
+            category: categorizeSkill(skillName),
+            level: (matchingSkill && typeof matchingSkill === 'object') ? matchingSkill.level : 'Intermediate',
+            offeredBy: teacher._id
+          });
+          await skillDoc.save();
+        }
+        
+        const matchData = SkillMatch.calculateMatchScore(user, teacher, skillDoc);
         
         // Only create matches with decent scores
         if (matchData.score >= 30) {
           const match = new SkillMatch({
             student: userId,
             teacher: teacher._id,
-            skill: skill._id,
+            skill: skillDoc._id,
+            matchScore: matchData.score,
+            factors: matchData.factors
+          });
+          
+          const savedMatch = await match.save();
+          newMatches.push(savedMatch);
+        }
+      }
+    }
+    
+    // Also check for reverse matches - users who want to learn what this user teaches
+    const teachingSkills = user.skillsTeaching || [];
+    
+    for (const skillItem of teachingSkills) {
+      // Extract skill name - handle both string format (legacy) and object format (new)
+      let skillName;
+      if (typeof skillItem === 'string') {
+        skillName = skillItem;
+      } else if (typeof skillItem === 'object' && skillItem.skill) {
+        skillName = skillItem.skill;
+      } else {
+        console.warn('Invalid teaching skill format:', skillItem);
+        continue; // Skip invalid skill formats
+      }
+      
+      // Find users who want to learn this skill
+      const students = await User.find({
+        'skillsLearning.skill': { $regex: new RegExp(skillName, 'i') },
+        _id: { $ne: userId } // Exclude user's own skills
+      });
+      
+      // Generate matches for each student
+      for (const student of students) {
+        // Skip if student is banned
+        if (student.profile?.isBanned) continue;
+        
+        // Calculate match score using the SkillMatch static method
+        // First, find or create a skill object for this matching skill
+        let skillDoc = await Skill.findOne({ name: { $regex: new RegExp(skillName, 'i') } });
+        
+        if (!skillDoc) {
+          // Find the specific skill in student's learning skills for level info
+          const matchingSkill = student.skillsLearning.find(s => 
+            (typeof s === 'string' ? s : s.skill)?.toLowerCase() === skillName.toLowerCase()
+          );
+          
+          // Create a basic skill document if it doesn't exist
+          skillDoc = new Skill({
+            name: skillName,
+            description: `Skill: ${skillName}`,
+            category: categorizeSkill(skillName),
+            level: (matchingSkill && typeof matchingSkill === 'object') ? matchingSkill.currentLevel || 'Beginner' : 'Beginner',
+            offeredBy: userId  // The current user is offering this skill
+          });
+          await skillDoc.save();
+        }
+        
+        const matchData = SkillMatch.calculateMatchScore(student, { ...user.toObject(), _id: userId }, skillDoc);
+        
+        // Only create matches with decent scores
+        if (matchData.score >= 30) {
+          const match = new SkillMatch({
+            student: student._id,
+            teacher: userId,
+            skill: skillDoc._id,
             matchScore: matchData.score,
             factors: matchData.factors
           });
@@ -163,16 +299,18 @@ router.post('/generate', auth, async (req, res) => {
     // If no available skills were found for any of the learning interests
     if (totalAvailableSkills === 0) {
       return res.json({ 
-        message: 'No available skills found matching your learning interests. Try adding different learning interests.', 
-        error: 'NO_AVAILABLE_SKILLS' 
+        message: 'No teachers found for your learning interests. Try adding different skills or check back later as new teachers join regularly.', 
+        error: 'NO_AVAILABLE_SKILLS',
+        suggestion: 'Consider adding more popular skills or expanding your interests'
       });
     }
     
     // If skills were found but no matches met the minimum score threshold
     if (totalAvailableSkills > 0 && newMatches.length === 0) {
       return res.json({ 
-        message: 'Found skills matching your interests, but none met our quality threshold. Try adjusting your profile or adding different learning interests.', 
-        error: 'NO_QUALITY_MATCHES' 
+        message: 'We found potential teachers for your interests, but none met our quality standards. Try completing your profile or adding more learning interests.', 
+        error: 'NO_QUALITY_MATCHES',
+        suggestion: 'Complete your profile bio, add a profile picture, or specify more learning interests'
       });
     }
     
@@ -182,7 +320,10 @@ router.post('/generate', auth, async (req, res) => {
     });
   } catch (error) {
     console.error('Generate matches error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ 
+      message: 'We encountered an issue while generating your matches. Please try again in a few moments.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
@@ -198,7 +339,10 @@ router.post('/matches/:matchId/interested', auth, async (req, res) => {
     });
     
     if (!match) {
-      return res.status(404).json({ message: 'Match not found' });
+      return res.status(404).json({ 
+        message: 'This match could not be found or may no longer be available.',
+        field: 'match'
+      });
     }
     
     match.studentInterested = true;
@@ -214,7 +358,10 @@ router.post('/matches/:matchId/interested', auth, async (req, res) => {
     res.json({ message: 'Interest recorded', match });
   } catch (error) {
     console.error('Express interest error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ 
+      message: 'We encountered an issue while recording your interest. Please try again.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
@@ -230,7 +377,10 @@ router.post('/matches/:matchId/decline', auth, async (req, res) => {
     });
     
     if (!match) {
-      return res.status(404).json({ message: 'Match not found' });
+      return res.status(404).json({ 
+        message: 'This match could not be found or may no longer be available.',
+        field: 'match'
+      });
     }
     
     match.status = 'Declined';
@@ -239,7 +389,10 @@ router.post('/matches/:matchId/decline', auth, async (req, res) => {
     res.json({ message: 'Match declined' });
   } catch (error) {
     console.error('Decline match error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ 
+      message: 'We encountered an issue while declining this match. Please try again.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
@@ -273,7 +426,10 @@ router.get('/stats', auth, async (req, res) => {
     });
   } catch (error) {
     console.error('Get stats error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ 
+      message: 'We encountered an issue while loading your statistics. Please refresh the page and try again.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
@@ -300,7 +456,10 @@ router.get('/interested-students', auth, async (req, res) => {
     res.json({ interestedStudents: matches });
   } catch (error) {
     console.error('Get interested students error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ 
+      message: 'We encountered an issue while loading interested students. Please refresh the page and try again.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
@@ -317,7 +476,10 @@ router.post('/students/:matchId/accept', auth, async (req, res) => {
     });
     
     if (!match) {
-      return res.status(404).json({ message: 'Match not found' });
+      return res.status(404).json({ 
+        message: 'This match could not be found or may no longer be available.',
+        field: 'match'
+      });
     }
     
     match.teacherInterested = true;
@@ -329,7 +491,10 @@ router.post('/students/:matchId/accept', auth, async (req, res) => {
     res.json({ message: 'Student accepted', match });
   } catch (error) {
     console.error('Accept student error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ 
+      message: 'We encountered an issue while accepting this student. Please try again.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
@@ -422,7 +587,10 @@ router.post('/advanced-search', auth, async (req, res) => {
     });
   } catch (error) {
     console.error('Advanced search error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ 
+      message: 'We encountered an issue while searching. Please try again with different criteria.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 

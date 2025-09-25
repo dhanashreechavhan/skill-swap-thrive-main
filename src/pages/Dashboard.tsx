@@ -30,6 +30,8 @@ const Dashboard = () => {
   const [upcomingSessions, setUpcomingSessions] = useState<any[]>([]);
   const [recommendedMatches, setRecommendedMatches] = useState<any[]>([]);
   const [stats, setStats] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const computeCompletion = (data: any) => {
     if (!data) return 0;
@@ -117,35 +119,50 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       if (user) {
-        // Fetch profile data
-        const profileResult = await apiService.getProfile();
-        if (profileResult.data) {
-          setProfile(profileResult.data);
+        setLoading(true);
+        setError(null);
+        try {
+          // Fetch profile data
+          const profileResult = await apiService.getProfile();
+          console.log('Profile result:', profileResult);
+          if (profileResult.data) {
+            setProfile(profileResult.data);
+          } else if (profileResult.error) {
+            setError(profileResult.error);
+            console.error('Profile fetch error:', profileResult.error);
+          }
+
+          // Fetch schedules for upcoming sessions
+          const schedulesResult = await apiService.getSchedules();
+          console.log('Schedules result:', schedulesResult);
+          if (schedulesResult.data && Array.isArray(schedulesResult.data)) {
+            const upcoming = schedulesResult.data
+              .filter((s: any) => new Date(s.date) >= new Date())
+              .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
+              .slice(0, 2)
+              .map((s: any) => ({
+                id: s._id,
+                title: typeof s.skill === 'object' ? (s.skill.name || s.skill.title || 'Session') : String(s.skill),
+                partner: s.student?._id === user._id ? (s.teacher?.name || 'Partner') : (s.student?.name || 'Partner'),
+                time: new Date(s.date).toLocaleDateString() + " " + (s.startTime || ''),
+                type: s.student?._id === user._id ? 'learning' : 'teaching',
+                status: s.status || 'Pending'
+              }));
+            setUpcomingSessions(upcoming);
+          } else if (schedulesResult.error) {
+            console.error('Schedules fetch error:', schedulesResult.error);
+          }
+
+          // Fetch skills for recommended matches (temporarily disabled due to TypeScript issues)
+          // const skillsResult = await apiService.getSkills();
+          // Set empty recommended matches for now
+          setRecommendedMatches([]);
+        } catch (err) {
+          console.error('Dashboard data fetch error:', err);
+          setError('Failed to load dashboard data');
+        } finally {
+          setLoading(false);
         }
-
-        // Fetch schedules for upcoming sessions
-        const schedulesResult = await apiService.getSchedules();
-        if (schedulesResult.data && Array.isArray(schedulesResult.data)) {
-          const upcoming = schedulesResult.data
-            .filter((s: any) => new Date(s.date) >= new Date())
-            .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
-            .slice(0, 2)
-            .map((s: any) => ({
-              id: s._id,
-              title: typeof s.skill === 'object' ? (s.skill.name || s.skill.title || 'Session') : String(s.skill),
-              partner: s.student?._id === user._id ? (s.teacher?.name || 'Partner') : (s.student?.name || 'Partner'),
-              time: new Date(s.date).toLocaleDateString() + " " + (s.startTime || ''),
-              type: s.student?._id === user._id ? 'learning' : 'teaching',
-              status: s.status || 'Pending'
-            }));
-          setUpcomingSessions(upcoming);
-        }
-
-        // Fetch skills for recommended matches (temporarily disabled due to TypeScript issues)
-        // const skillsResult = await apiService.getSkills();
-        // Set empty recommended matches for now
-        setRecommendedMatches([]);
-
       }
     };
     fetchDashboardData();
@@ -171,6 +188,25 @@ const Dashboard = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p>Please log in to view your dashboard.</p>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-500 mb-4">Error loading dashboard: {error}</p>
+          <Button onClick={() => window.location.reload()}>Retry</Button>
+        </div>
       </div>
     );
   }
@@ -238,16 +274,16 @@ const Dashboard = () => {
                           className="w-20 h-20 rounded-full object-cover"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
-                            console.log('Avatar load error, trying direct path');
-                            // Try direct path as fallback
-                            if (profile.profile.avatar.startsWith('uploads/')) {
-                              target.onerror = null;
-                              target.src = `${ASSET_BASE_URL}/${profile.profile.avatar}`;
-                            } else {
-                              target.onerror = null;
-                              target.src = `${ASSET_BASE_URL}/uploads/${profile.profile.avatar}`;
-                            }
+                            console.log('Avatar load error, trying alternative paths');
+                            // Try different path constructions as fallback
+                            const directUrl = `${ASSET_BASE_URL}/uploads/${profile.profile.avatar}`;
+                            const directUrlNoUploads = `${ASSET_BASE_URL}/${profile.profile.avatar}`;
+                            console.log('Trying direct URL with uploads:', directUrl);
+                            console.log('Trying direct URL without uploads:', directUrlNoUploads);
+                            target.onerror = null;
+                            target.src = directUrl;
                           }}
+                          onLoad={() => console.log('Avatar loaded successfully')}
                         />
                       </>
                     ) : (
@@ -271,6 +307,18 @@ const Dashboard = () => {
                       <Badge variant="secondary">{getSkillCount(profile?.skillsTeaching)} Skills Teaching</Badge>
                       <Badge variant="secondary">{getSkillCount(profile?.skillsLearning)} Skills Learning</Badge>
                     </div>
+                    {/* Quick preview of actual skills */}
+                    <div className="flex flex-wrap gap-1 mt-3">
+                      {profile?.skillsTeaching?.slice(0, 3).map((skillObj: any, index: number) => {
+                        const skillName = typeof skillObj === 'string' ? skillObj : skillObj?.skill || 'Unknown Skill';
+                        return (
+                          <Badge key={index} variant="outline" className="text-xs">{skillName}</Badge>
+                        );
+                      })}
+                      {profile?.skillsTeaching?.length > 3 && (
+                        <Badge variant="outline" className="text-xs">+{profile.skillsTeaching.length - 3} more</Badge>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -284,13 +332,17 @@ const Dashboard = () => {
                   <div>
                     <h4 className="font-medium mb-2">Skills I'm Teaching</h4>
                     <div className="flex flex-wrap gap-1 max-w-full overflow-auto">
-                      {profile?.skillsTeaching?.map((skillObj: any, index: number) => {
-                        // Handle both old format (strings) and new format (objects)
-                        const skillName = typeof skillObj === 'string' ? skillObj : skillObj?.skill || 'Unknown Skill';
-                        return (
-                          <Badge key={index} variant="outline">{skillName}</Badge>
-                        );
-                      }) || <p>No skills listed.</p>}
+                      {profile?.skillsTeaching && profile.skillsTeaching.length > 0 ? (
+                        profile.skillsTeaching.map((skillObj: any, index: number) => {
+                          // Handle both old format (strings) and new format (objects)
+                          const skillName = typeof skillObj === 'string' ? skillObj : skillObj?.skill || 'Unknown Skill';
+                          return (
+                            <Badge key={index} variant="outline">{skillName}</Badge>
+                          );
+                        })
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No teaching skills added yet. <button className="text-primary underline" onClick={() => navigate('/profile/edit')}>Add some skills</button></p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -299,13 +351,17 @@ const Dashboard = () => {
                   <div>
                     <h4 className="font-medium mb-2">Skills I'm Learning</h4>
                     <div className="flex flex-wrap gap-1">
-                      {profile?.skillsLearning?.map((skillObj: any, index: number) => {
-                        // Handle both old format (strings) and new format (objects)
-                        const skillName = typeof skillObj === 'string' ? skillObj : skillObj?.skill || 'Unknown Skill';
-                        return (
-                          <Badge key={index} variant="outline">{skillName}</Badge>
-                        );
-                      }) || <p>No skills listed.</p>}
+                      {profile?.skillsLearning && profile.skillsLearning.length > 0 ? (
+                        profile.skillsLearning.map((skillObj: any, index: number) => {
+                          // Handle both old format (strings) and new format (objects)
+                          const skillName = typeof skillObj === 'string' ? skillObj : skillObj?.skill || 'Unknown Skill';
+                          return (
+                            <Badge key={index} variant="outline">{skillName}</Badge>
+                          );
+                        })
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No learning skills added yet. <button className="text-primary underline" onClick={() => navigate('/profile/edit')}>Add some skills</button></p>
+                      )}
                     </div>
                   </div>
                   <div>

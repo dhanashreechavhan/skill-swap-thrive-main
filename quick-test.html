@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Full Stack Functionality Test</title>
+    <style>
+        body { font-family: Arial; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .test-section { background: white; border: 1px solid #ddd; margin: 20px 0; padding: 20px; border-radius: 8px; }
+        .status { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .working { background: #d4edda; color: #155724; }
+        .broken { background: #f8d7da; color: #721c24; }
+        .unknown { background: #e2e3e5; color: #383d41; }
+        button { background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin: 5px; }
+        .result { background: #f8f9fa; border: 1px solid #dee2e6; padding: 10px; margin: 10px 0; border-radius: 4px; white-space: pre-wrap; font-family: monospace; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    </style>
+</head>
+<body>
+    <h1>🚀 Full Stack Project Functionality Test</h1>
+    
+    <div class="test-section">
+        <h2>🔗 Backend Infrastructure</h2>
+        <div>
+            <strong>Server Health:</strong> <span id="server-status" class="status unknown">Testing...</span>
+            <button onclick="testServer()">Test Server</button>
+        </div>
+        <div>
+            <strong>Database:</strong> <span id="db-status" class="status unknown">Testing...</span>
+            <button onclick="testDatabase()">Test Database</button>
+        </div>
+        <div id="backend-result" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔐 Authentication</h2>
+        <div>
+            <strong>Login:</strong> <span id="login-status" class="status unknown">Testing...</span>
+            <button onclick="testLogin()">Test Login</button>
+        </div>
+        <div id="auth-result" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📚 Core Features</h2>
+        <div class="grid">
+            <div>
+                <strong>Skills API:</strong> <span id="skills-status" class="status unknown">Testing...</span>
+                <button onclick="testSkills()">Test Skills</button>
+            </div>
+            <div>
+                <strong>Matching API:</strong> <span id="matching-status" class="status unknown">Testing...</span>
+                <button onclick="testMatching()">Test Matching</button>
+            </div>
+        </div>
+        <div id="features-result" class="result" style="display: none;"></div>
+    </div>
+
+    <button onclick="runAllTests()" style="background: #28a745; font-size: 16px; padding: 12px 24px;">🚀 Run All Tests</button>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+        let authToken = '';
+
+        function updateStatus(id, status) {
+            document.getElementById(id).className = `status ${status}`;
+            document.getElementById(id).textContent = status.toUpperCase();
+        }
+
+        function showResult(containerId, result) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = result;
+            container.style.display = 'block';
+        }
+
+        async function testServer() {
+            try {
+                const response = await fetch('http://localhost:5000/health');
+                if (response.ok) {
+                    updateStatus('server-status', 'working');
+                    showResult('backend-result', '✅ Server is running and healthy');
+                } else {
+                    updateStatus('server-status', 'broken');
+                    showResult('backend-result', '❌ Server health check failed');
+                }
+            } catch (error) {
+                updateStatus('server-status', 'broken');
+                showResult('backend-result', '❌ Server is not running');
+            }
+        }
+
+        async function testDatabase() {
+            try {
+                const response = await fetch(`${API_BASE}/skills`);
+                if (response.ok) {
+                    const data = await response.json();
+                    updateStatus('db-status', 'working');
+                    showResult('backend-result', `✅ Database connected. Found ${data.skills?.length || 0} skills`);
+                } else {
+                    updateStatus('db-status', 'broken');
+                    showResult('backend-result', '❌ Database connection failed');
+                }
+            } catch (error) {
+                updateStatus('db-status', 'broken');
+                showResult('backend-result', '❌ Cannot reach database');
+            }
+        }
+
+        async function testLogin() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: 'alice@example.com', password: 'password123' })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    authToken = data.token;
+                    updateStatus('login-status', 'working');
+                    showResult('auth-result', '✅ Login working. Auth token received.');
+                } else {
+                    updateStatus('login-status', 'broken');
+                    showResult('auth-result', '❌ Login failed');
+                }
+            } catch (error) {
+                updateStatus('login-status', 'broken');
+                showResult('auth-result', '❌ Login endpoint not accessible');
+            }
+        }
+
+        async function testSkills() {
+            try {
+                const response = await fetch(`${API_BASE}/skills`);
+                if (response.ok) {
+                    const data = await response.json();
+                    updateStatus('skills-status', 'working');
+                    showResult('features-result', `✅ Skills API working. Found ${data.skills?.length || 0} skills`);
+                } else {
+                    updateStatus('skills-status', 'broken');
+                    showResult('features-result', '❌ Skills API failed');
+                }
+            } catch (error) {
+                updateStatus('skills-status', 'broken');
+                showResult('features-result', '❌ Skills API not accessible');
+            }
+        }
+
+        async function testMatching() {
+            if (!authToken) {
+                updateStatus('matching-status', 'broken');
+                showResult('features-result', '❌ Need auth token for matching test');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/matching/matches`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    updateStatus('matching-status', 'working');
+                    showResult('features-result', `✅ Matching API working. Found ${data.matches?.length || 0} matches`);
+                } else {
+                    updateStatus('matching-status', 'broken');
+                    showResult('features-result', '❌ Matching API failed');
+                }
+            } catch (error) {
+                updateStatus('matching-status', 'broken');
+                showResult('features-result', '❌ Matching API not accessible');
+            }
+        }
+
+        async function runAllTests() {
+            await testServer();
+            await testDatabase();
+            await testLogin();
+            await testSkills();
+            await testMatching();
+        }
+    </script>
+</body>
+</html>

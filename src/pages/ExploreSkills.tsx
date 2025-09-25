@@ -228,7 +228,7 @@ const ExploreSkills = () => {
             </SelectTrigger>
             <SelectContent>
               {categories.map((category) => (
-                <SelectItem key={category} value={category === "All Categories" ? "all" : category.toLowerCase()}>
+                <SelectItem key={category} value={category === "All Categories" ? "all" : category}>
                   {category}
                 </SelectItem>
               ))}

@@ -1,3 +1,5 @@
+import { getUserFriendlyMessage } from './errorHandling';
+
 // Configure API and asset bases via Vite env; fall back to sensible dev defaults
 export const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -10,12 +12,33 @@ function getAssetBaseUrlForProduction(): string {
   // In production, use the backend URL for assets
   const apiUrl = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000/api';
   // Remove /api from the end to get the base URL
-  return apiUrl.replace(/\/api$/, '');
+  const baseUrl = apiUrl.replace(/\/api$/, '');
+  // Ensure we're using HTTPS in production
+  return baseUrl.replace(/^http:/, 'https:');
 }
 
 export const buildAssetUrl = (relativePath: string, cacheBust: boolean = false): string => {
-  const clean = relativePath.startsWith('/') ? relativePath.slice(1) : relativePath;
-  const url = `${ASSET_BASE_URL}/${clean}`;
+  // If the path is already a full URL, return it as is
+  if (relativePath.startsWith('http')) {
+    return relativePath;
+  }
+  
+  // Handle empty or undefined paths
+  if (!relativePath) {
+    return '';
+  }
+  
+  // Handle avatar paths - they should be prefixed with uploads/ if not already
+  let cleanPath = relativePath;
+  if (relativePath && !relativePath.startsWith('uploads/')) {
+    cleanPath = `uploads/${relativePath}`;
+  }
+  
+  // Ensure HTTPS is used in production
+  const protocol = (import.meta as any).env?.VITE_APP_ENV === 'production' ? 'https:' : 'http:';
+  const baseWithProtocol = ASSET_BASE_URL.replace(/^https?:/, protocol);
+  const url = `${baseWithProtocol}/${cleanPath}`;
+  console.log('Building asset URL:', url, 'from path:', relativePath);
   return cacheBust ? `${url}?t=${Date.now()}` : url;
 };
 
@@ -57,9 +80,12 @@ class ApiService {
     }
 
     try {
+      console.log('Making API request to:', url);
       const response = await fetch(url, {
         ...options,
         headers,
+        // Add credentials for CORS
+        credentials: 'include'
       });
 
       const contentType = response.headers.get('content-type');
@@ -71,12 +97,30 @@ class ApiService {
       }
 
       if (!response.ok) {
-        return { error: data.message || data || 'An error occurred' };
+        console.error('API request failed:', response.status, response.statusText, data);
+        // Create error object with response details for better error handling
+        const error = {
+          response: {
+            status: response.status,
+            data: data
+          },
+          message: data.message || data || 'An error occurred'
+        };
+        return { error: getUserFriendlyMessage(error) };
       }
 
+      console.log('API request successful:', url, data);
       return { data };
-    } catch (error) {
-      return { error: 'Network error' };
+    } catch (error: any) {
+      console.error('API request error:', error);
+      // Check if it's a network error
+      if (!navigator.onLine) {
+        return { error: 'You appear to be offline. Please check your internet connection and try again.' };
+      }
+      if (error.name === 'TypeError' && error.message?.includes('fetch')) {
+        return { error: 'Unable to connect to the server. Please check your internet connection and try again.' };
+      }
+      return { error: getUserFriendlyMessage(error) };
     }
   }
 

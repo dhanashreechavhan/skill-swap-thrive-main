@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiService } from "@/lib/api";
 import { loginSchema, type LoginFormData } from "@/lib/validationSchemas";
+import { showErrorToast, showSuccessToast, getFieldError } from "@/lib/errorHandling";
 
 const LoginValidated = () => {
   const { user, isLoading, login } = useAuth();
@@ -54,40 +55,29 @@ const LoginValidated = () => {
       const result = await login(data.email, data.password);
 
       if (result.error) {
-        // Handle specific server validation errors
-        if (result.error.toLowerCase().includes('email')) {
+        // Handle specific server validation errors with improved messages
+        if (result.error.toLowerCase().includes('email') || result.error.toLowerCase().includes('account')) {
           setError('email', { 
             type: 'server', 
-            message: result.error 
+            message: getFieldError('email', { message: result.error })
           });
-        } else if (result.error.toLowerCase().includes('password')) {
+        } else if (result.error.toLowerCase().includes('password') || result.error.toLowerCase().includes('incorrect')) {
           setError('password', { 
             type: 'server', 
-            message: result.error 
+            message: getFieldError('password', { message: result.error })
           });
         } else {
-          toast({
-            title: "Login failed",
-            description: result.error,
-            variant: "destructive",
-          });
+          showErrorToast({ message: result.error }, "Login Failed");
         }
         return;
       }
 
-      toast({
-        title: "Welcome back!",
-        description: "You have successfully logged in.",
-      });
+      showSuccessToast("You have successfully logged in. Welcome back!", "Login Successful");
       
       // Mark that this navigation is due to a fresh login
       setJustLoggedIn(true);
     } catch (error) {
-      toast({
-        title: "Login failed",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
+      showErrorToast(error, "Login Failed");
     }
   };
 

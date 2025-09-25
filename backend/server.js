@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const path = require('path');
 const {
   rateLimiters,
   securityHeaders,
@@ -13,8 +14,8 @@ const {
   securityErrorHandler
 } = require('./middleware/security');
 
-// Load environment variables
-dotenv.config();
+// Load environment variables from the correct path
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 const app = express();
 
@@ -30,6 +31,8 @@ app.use(rateLimiters.general); // General rate limiting
 // Middleware - CORS Configuration
 // Environment-based CORS configuration
 const isDevelopment = process.env.NODE_ENV === 'development';
+console.log('NODE_ENV:', process.env.NODE_ENV); // Debug log
+console.log('isDevelopment:', isDevelopment); // Debug log
 
 // Development allowed origins
 const developmentOrigins = [
@@ -45,21 +48,17 @@ const developmentOrigins = [
 const productionOrigins = [
   process.env.FRONTEND_URL,
   process.env.FRONTEND_URL_2, // Secondary domain if needed
-  // Add your production domains here
-  // 'https://yourapp.com',
-  // 'https://www.yourapp.com',
-  // 'https://app.yourapp.com',
-  'https://skillswapthrive.netlify.app', // Your Netlify frontend URL
-  'https://skillswapthrive.netlify.app/', // Your Netlify frontend URL with trailing slash
-  'https://skillswapthrive.netlify.app', // Duplicate without trailing slash for redundancy
+  'https://skillswapthrive.netlify.app',
+  'https://skillswapthrive.netlify.app/',
 ].filter(Boolean); // Remove undefined/empty values
 
 const allowedOrigins = isDevelopment ? developmentOrigins : productionOrigins;
 
-app.use(cors({
+// Configure CORS with more permissive settings for development
+const corsOptions = {
   origin: (origin, callback) => {
-    // Allow requests with no origin in development (like mobile apps, Postman, curl)
-    if (!origin && isDevelopment) {
+    // Allow requests with no origin (like mobile apps, Postman, curl)
+    if (!origin) {
       return callback(null, true);
     }
     
@@ -78,23 +77,31 @@ app.use(cors({
       return callback(null, true);
     }
     
-    // For development only: allow any localhost or 127.0.0.1 origin
+    // For development: allow any localhost or 127.0.0.1 origin
     if (isDevelopment && origin && (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
+      console.log(`✅ CORS allowed development origin: ${origin}`);
       return callback(null, true);
     }
     
-    // Log blocked requests in production for monitoring
-    if (!isDevelopment && origin) {
+    // Log blocked requests for monitoring
+    if (origin) {
       console.log(`🚫 CORS blocked request from origin: ${origin}`);
+    }
+    
+    // In development, be more permissive but still log
+    if (isDevelopment) {
+      console.log(`⚠️  CORS violation in development - allowing request anyway: ${origin}`);
+      return callback(null, true);
     }
     
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   optionsSuccessStatus: 200,
-  // Additional security headers
   preflightContinue: false,
-}));
+};
+
+app.use(cors(corsOptions));
 
 // Body parsing with size limits
 app.use(express.json({ limit: '10mb' }));
@@ -127,6 +134,12 @@ app.use('/uploads', (req, res, next) => {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  
+  // Ensure HTTPS is used in production
+  if (!isDevelopment) {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  
   next();
 });
 
@@ -135,6 +148,12 @@ app.use('/uploads', express.static('uploads', {
     // Ensure these headers are also set when serving static files
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    // Ensure HTTPS is used in production
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    if (!isDevelopment) {
+      res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    }
   }
 }));
 
@@ -240,7 +259,7 @@ app.use('/api/admin', rateLimiters.admin, adminRoutes);
 app.use(securityErrorHandler);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`🔒 Security middleware active`);
   console.log(`📊 Rate limiting enabled`);

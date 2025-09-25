@@ -27,6 +27,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { apiService } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { showErrorToast, showSuccessToast, handleAsyncOperation } from '@/lib/errorHandling';
 
 interface Match {
   _id: string;
@@ -62,6 +63,16 @@ interface Match {
   teacherInterested: boolean;
 }
 
+interface MatchesResponse {
+  matches: Match[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+}
+
 const Matches = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -72,7 +83,7 @@ const Matches = () => {
   const [error, setError] = useState<string | null>(null);
   const [generatingMatches, setGeneratingMatches] = useState(false);
   const [filter, setFilter] = useState({
-    minScore: '50',
+    minScore: '30',
     skillName: '',
     category: 'all'
   });
@@ -83,81 +94,67 @@ const Matches = () => {
     setLoading(true);
     setError(null);
     
-    try {
-      const queryParams = new URLSearchParams();
-      if (filter.minScore) queryParams.append('minScore', filter.minScore);
-      if (filter.skillName) queryParams.append('skillName', filter.skillName);
-      if (filter.category && filter.category !== 'all') queryParams.append('category', filter.category);
+    const result = await handleAsyncOperation(async () => {
+      const params: any = {};
+      if (filter.minScore) params.minScore = filter.minScore;
+      if (filter.skillName) params.skillName = filter.skillName;
+      if (filter.category && filter.category !== 'all') params.category = filter.category;
       
-      const result = await apiService.request(`/matching/matches?${queryParams.toString()}`);
+      const apiResult = await apiService.getMatches(params);
       
-      if (result.error) {
-        setError(result.error);
-      } else {
-        setMatches(result.data?.matches || []);
+      if (apiResult.error) {
+        throw new Error(apiResult.error);
       }
-    } catch (err) {
-      setError('Failed to load matches');
-    } finally {
-      setLoading(false);
+      
+      return apiResult.data as MatchesResponse;
+    });
+    
+    if (result) {
+      setMatches(result.matches || []);
+    } else {
+      setError('Failed to load your matches. Please try refreshing the page.');
     }
+    
+    setLoading(false);
   };
 
   const generateNewMatches = async () => {
     setGeneratingMatches(true);
     
-    try {
-      const result = await apiService.request('/matching/generate', { method: 'POST' });
-      
-      if (result.error) {
-        toast({
-          title: "Error",
-          description: result.error,
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Success",
-          description: `Generated ${result.data.matchesGenerated} new matches!`,
-        });
-        await loadMatches();
-      }
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: "Failed to generate matches",
-        variant: "destructive"
-      });
-    } finally {
-      setGeneratingMatches(false);
+    const result = await handleAsyncOperation(
+      async () => {
+        const apiResult = await apiService.generateMatches();
+        if (apiResult.error) {
+          throw new Error(apiResult.error);
+        }
+        return apiResult.data;
+      },
+      "New matches have been generated successfully!",
+      "Match Generation Failed"
+    );
+    
+    if (result) {
+      await loadMatches();
     }
+    
+    setGeneratingMatches(false);
   };
 
   const expressInterest = async (matchId: string) => {
-    try {
-      const result = await apiService.request(`/matching/matches/${matchId}/interested`, { 
-        method: 'POST' 
-      });
-      
-      if (result.error) {
-        toast({
-          title: "Error",
-          description: result.error,
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Interest Expressed!",
-          description: "The teacher has been notified of your interest.",
-        });
-        await loadMatches();
-      }
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: "Failed to express interest",
-        variant: "destructive"
-      });
+    const result = await handleAsyncOperation(
+      async () => {
+        const apiResult = await apiService.expressInterest(matchId);
+        if (apiResult.error) {
+          throw new Error(apiResult.error);
+        }
+        return apiResult.data;
+      },
+      "Your interest has been recorded! The teacher will be notified.",
+      "Failed to Express Interest"
+    );
+    
+    if (result) {
+      await loadMatches();
     }
   };
 
@@ -311,6 +308,12 @@ const Matches = () => {
               </div>
             ) : (
               matches.map((match) => {
+                // Add safety checks for match data
+                if (!match.teacher) {
+                  console.warn('Match missing teacher data:', match);
+                  return null; // Skip rendering this match
+                }
+                
                 const quality = getMatchQuality(match.matchScore);
                 
                 return (
@@ -320,11 +323,11 @@ const Matches = () => {
                         <div className="flex items-center gap-3">
                           <Avatar className="h-12 w-12">
                             <AvatarFallback>
-                              {getInitials(match.teacher.name)}
+                              {match.teacher.name ? getInitials(match.teacher.name) : 'U'}
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <h3 className="font-semibold">{match.teacher.name}</h3>
+                            <h3 className="font-semibold">{match.teacher.name || 'Unknown Teacher'}</h3>
                             <div className="flex items-center gap-1 text-sm text-muted-foreground">
                               <MapPin className="h-3 w-3" />
                               {match.teacher.profile?.location || 'Location not specified'}
@@ -343,11 +346,11 @@ const Matches = () => {
                       <div>
                         <div className="flex items-center gap-2 mb-2">
                           <Award className="h-4 w-4 text-primary" />
-                          <span className="font-medium">{match.skill.name}</span>
-                          <Badge variant="outline">{match.skill.level}</Badge>
+                          <span className="font-medium">{match.skill?.name || 'Unknown Skill'}</span>
+                          <Badge variant="outline">{match.skill?.level || 'N/A'}</Badge>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          {match.skill.description}
+                          {match.skill?.description || 'No description available'}
                         </p>
                       </div>
 
@@ -356,7 +359,7 @@ const Matches = () => {
                         <div className="flex items-center gap-2">
                           <Star className="h-4 w-4 text-yellow-500" />
                           <span className="text-sm">
-                            {match.teacher.rating.averageRating.toFixed(1)} ({match.teacher.rating.totalRatings} reviews)
+                            {match.teacher.rating.averageRating?.toFixed(1) || 'N/A'} ({match.teacher.rating.totalRatings || 0} reviews)
                           </span>
                         </div>
                       )}
@@ -364,19 +367,19 @@ const Matches = () => {
                       {/* Match Factors */}
                       <div className="space-y-2">
                         <p className="text-sm font-medium">Match Factors:</p>
-                        {match.factors.skillCompatibility && (
+                        {match.factors?.skillCompatibility && (
                           <div className="flex items-center justify-between text-sm">
                             <span>Skill Compatibility</span>
                             <span>{match.factors.skillCompatibility}%</span>
                           </div>
                         )}
-                        {match.factors.locationDistance && (
+                        {match.factors?.locationDistance && (
                           <div className="flex items-center justify-between text-sm">
                             <span>Location Match</span>
                             <span>{match.factors.locationDistance}%</span>
                           </div>
                         )}
-                        {match.factors.ratingScore && (
+                        {match.factors?.ratingScore && (
                           <div className="flex items-center justify-between text-sm">
                             <span>Teacher Rating</span>
                             <span>{Math.round(match.factors.ratingScore)}%</span>

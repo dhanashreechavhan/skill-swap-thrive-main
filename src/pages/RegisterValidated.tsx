@@ -12,6 +12,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { registerSchema, type RegisterFormData } from "@/lib/validationSchemas";
+import { showErrorToast, showSuccessToast, getFieldError } from "@/lib/errorHandling";
 
 const RegisterValidated = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -82,47 +83,36 @@ const RegisterValidated = () => {
       const result = await authRegister(data.name, data.email, data.password);
 
       if (result.error) {
-        // Handle specific server validation errors
+        // Handle specific server validation errors with improved messages
         if (result.error.toLowerCase().includes('email')) {
           setError('email', { 
             type: 'server', 
-            message: result.error 
+            message: getFieldError('email', { message: result.error })
           });
         } else if (result.error.toLowerCase().includes('password')) {
           setError('password', { 
             type: 'server', 
-            message: result.error 
+            message: getFieldError('password', { message: result.error })
           });
         } else if (result.error.toLowerCase().includes('name')) {
           setError('name', { 
             type: 'server', 
-            message: result.error 
+            message: getFieldError('name', { message: result.error })
           });
         } else {
-          toast({
-            title: "Registration failed",
-            description: result.error,
-            variant: "destructive",
-          });
+          showErrorToast({ message: result.error }, "Registration Failed");
         }
         return;
       }
 
-      toast({
-        title: "Welcome to SkillSwap!",
-        description: "Your account has been created successfully.",
-      });
+      showSuccessToast("Your account has been created successfully! Welcome to SkillSwap.", "Registration Successful");
       
       // Add a small delay to ensure the user state is set
       setTimeout(() => {
         navigate("/onboarding");
       }, 100);
     } catch (error) {
-      toast({
-        title: "Registration failed",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
+      showErrorToast(error, "Registration Failed");
     }
   };
 

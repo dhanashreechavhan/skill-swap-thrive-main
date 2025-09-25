@@ -1,5 +1,3 @@
-// ... previous code ...
-
 const express = require('express');
 const { auth } = require('../middleware/auth');
 const { userValidation } = require('../middleware/validation');
@@ -40,7 +38,11 @@ router.get('/profile', auth, async (req, res) => {
     plain.profile.profileCompletion = computeProfileCompletion(plain);
     res.json(plain);
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error });
+    console.error('Profile fetch error:', error);
+    res.status(500).json({ 
+      message: 'We encountered an issue while loading your profile. Please refresh the page and try again.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
@@ -127,7 +129,11 @@ router.get('/search', userValidation.search, async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error });
+    console.error('User search error:', error);
+    res.status(500).json({ 
+      message: 'We encountered an issue while searching for users. Please try again with different search criteria.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
@@ -158,7 +164,10 @@ router.put('/profile', auth, conditionalUpload, userValidation.updateProfile, as
 
     const user = await User.findById(req.user._id);
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ 
+        message: 'Your user profile could not be found. Please try logging in again.',
+        field: 'user'
+      });
     }
 
     // Handle avatar upload
@@ -197,6 +206,82 @@ router.put('/profile', auth, conditionalUpload, userValidation.updateProfile, as
       user.profile.socialLinks = incoming.socialLinks;
     }
 
+    // Skills Teaching - handle both string arrays and JSON arrays
+    if (incoming.skillsTeaching) {
+      try {
+        let skillsTeaching = [];
+        if (typeof incoming.skillsTeaching === 'string') {
+          // Try to parse as JSON array first
+          try {
+            skillsTeaching = JSON.parse(incoming.skillsTeaching);
+          } catch (e) {
+            // If parsing fails, treat as a single skill string
+            skillsTeaching = [incoming.skillsTeaching];
+          }
+        } else if (Array.isArray(incoming.skillsTeaching)) {
+          skillsTeaching = incoming.skillsTeaching;
+        }
+        
+        // Convert simple string array to proper skill objects
+        user.skillsTeaching = skillsTeaching.map(skill => {
+          if (typeof skill === 'string') {
+            return { skill: skill, level: 'Intermediate', isActive: true };
+          }
+          // If already an object with skill property, return as is
+          if (typeof skill === 'object' && skill.skill) {
+            return skill;
+          }
+          // Fallback for any other format
+          return { skill: String(skill), level: 'Intermediate', isActive: true };
+        });
+      } catch (error) {
+        console.error('Error processing skillsTeaching:', error);
+      }
+    }
+
+    // Skills Learning - handle both string arrays and JSON arrays
+    if (incoming.skillsLearning) {
+      try {
+        let skillsLearning = [];
+        if (typeof incoming.skillsLearning === 'string') {
+          // Try to parse as JSON array first
+          try {
+            skillsLearning = JSON.parse(incoming.skillsLearning);
+          } catch (e) {
+            // If parsing fails, treat as a single skill string
+            skillsLearning = [incoming.skillsLearning];
+          }
+        } else if (Array.isArray(incoming.skillsLearning)) {
+          skillsLearning = incoming.skillsLearning;
+        }
+        
+        // Convert simple string array to proper skill objects
+        user.skillsLearning = skillsLearning.map(skill => {
+          if (typeof skill === 'string') {
+            return { 
+              skill: skill, 
+              currentLevel: 'Beginner', 
+              targetLevel: 'Intermediate',
+              urgency: 'Medium'
+            };
+          }
+          // If already an object with skill property, return as is
+          if (typeof skill === 'object' && skill.skill) {
+            return skill;
+          }
+          // Fallback for any other format
+          return { 
+            skill: String(skill), 
+            currentLevel: 'Beginner', 
+            targetLevel: 'Intermediate',
+            urgency: 'Medium'
+          };
+        });
+      } catch (error) {
+        console.error('Error processing skillsLearning:', error);
+      }
+    }
+
     // Save user
     await user.save();
 
@@ -217,7 +302,10 @@ router.put('/profile', auth, conditionalUpload, userValidation.updateProfile, as
     res.json(plain);
   } catch (error) {
     console.error('Profile update error:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ 
+      message: 'We encountered an issue while updating your profile. Please check your information and try again.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 

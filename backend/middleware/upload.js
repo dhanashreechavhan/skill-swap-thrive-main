@@ -1,97 +1,83 @@
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
+const fs = require('fs').promises;
 
 // Ensure uploads directory exists
-const uploadDir = path.join(__dirname, '..', 'uploads');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
+const ensureUploadsDir = async () => {
+  try {
+    await fs.access('uploads');
+  } catch (error) {
+    // Directory doesn't exist, create it
+    await fs.mkdir('uploads', { recursive: true });
+  }
+};
+
+// Initialize uploads directory on module load
+ensureUploadsDir().catch(console.error);
 
 // Configure multer storage
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const ext = path.extname(file.originalname).toLowerCase();
-        cb(null, `avatar-${uniqueSuffix}${ext}`);
-    }
-});
-
-// File type validation
-const allowedMimeTypes = new Set([
-    'image/jpeg',
-    'image/png',
-    'image/gif',
-    'image/webp'
-]);
-
-const fileFilter = (req, file, cb) => {
-    if (allowedMimeTypes.has(file.mimetype)) {
-        cb(null, true);
-    } else {
-        cb(new Error(`Invalid file type. Allowed types: ${Array.from(allowedMimeTypes).join(', ')}`), false);
-    }
-};
-
-// Create multer upload instance
-const upload = multer({
-    storage: storage,
-    limits: {
-        fileSize: 5 * 1024 * 1024, // 5MB
-        files: 1
-    },
-    fileFilter: fileFilter
-});
-
-// Helper function to clean up old avatar
-const cleanupOldAvatar = async (filename) => {
-    if (!filename) return;
-    
+  destination: async function (req, file, cb) {
     try {
-        const filepath = path.join(uploadDir, filename);
-        if (fs.existsSync(filepath)) {
-            await fs.promises.unlink(filepath);
-            console.log(`Cleaned up old avatar: ${filename}`);
-        }
+      // Ensure uploads directory exists before saving
+      await ensureUploadsDir();
+      cb(null, 'uploads/');
     } catch (error) {
-        console.error(`Error cleaning up old avatar: ${error.message}`);
+      cb(error, 'uploads/');
     }
+  },
+  filename: function (req, file, cb) {
+    // Generate unique filename with timestamp
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const extension = path.extname(file.originalname);
+    const filename = file.fieldname + '-' + uniqueSuffix + extension;
+    cb(null, filename);
+  }
+});
+
+// File filter to only allow images
+const fileFilter = (req, file, cb) => {
+  // Accept images only
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only image files are allowed!'), false);
+  }
 };
 
-// Error handler middleware for upload errors
-const handleUploadError = (err, req, res, next) => {
-    if (err instanceof multer.MulterError) {
-        if (err.code === 'LIMIT_FILE_SIZE') {
-            return res.status(400).json({
-                error: true,
-                code: 'FILE_TOO_LARGE',
-                message: 'File size exceeds 5MB limit'
-            });
-        }
-        return res.status(400).json({
-            error: true,
-            code: err.code,
-            message: err.message
-        });
-    }
+// Multer upload configuration
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  }
+});
+
+// Helper function to clean up old avatar files
+const cleanupOldAvatar = async (oldAvatarPath) => {
+  if (!oldAvatarPath) return;
+  
+  try {
+    // If it's a full path, extract just the filename
+    const filename = path.basename(oldAvatarPath);
+    const fullPath = path.join('uploads', filename);
     
-    if (err.message.includes('Invalid file type')) {
-        return res.status(400).json({
-            error: true,
-            code: 'INVALID_FILE_TYPE',
-            message: err.message
-        });
+    // Check if file exists before trying to delete
+    try {
+      await fs.access(fullPath);
+      await fs.unlink(fullPath);
+      console.log('Successfully deleted old avatar:', fullPath);
+    } catch (error) {
+      // File doesn't exist, which is fine
+      console.log('Old avatar file not found for deletion:', fullPath);
     }
-    
-    next(err);
+  } catch (error) {
+    console.error('Error cleaning up old avatar:', error);
+  }
 };
 
 module.exports = {
-    upload,
-    cleanupOldAvatar,
-    handleUploadError,
-    allowedMimeTypes
+  upload,
+  cleanupOldAvatar
 };

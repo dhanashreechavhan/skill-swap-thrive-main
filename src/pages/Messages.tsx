@@ -24,6 +24,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { apiService } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { showErrorToast, showSuccessToast, handleAsyncOperation } from '@/lib/errorHandling';
 
 const Messages = () => {
   const { user } = useAuth();
@@ -155,29 +156,34 @@ const Messages = () => {
     if (!user) return;
     
     setLoading(true);
-    try {
-      const result = await apiService.getMessages();
-      if (result.data) {
-        // Process messages into conversations format
-        const processedMessages = result.data.map((msg: any) => ({
-          id: msg._id,
-          sender: msg.sender._id === user._id ? 'me' : 'other',
-          content: msg.content,
-          timestamp: new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          type: 'text',
-          isRead: msg.isRead,
-          senderId: msg.sender._id,
-          receiverId: msg.receiver._id
-        }));
-        setMessages(processedMessages);
+    
+    const result = await handleAsyncOperation(async () => {
+      const apiResult = await apiService.getMessages();
+      if (apiResult.error) {
+        throw new Error(apiResult.error);
       }
-    } catch (error) {
-      console.error('Error loading messages:', error);
-      // Use mock data as fallback
+      return apiResult.data;
+    });
+    
+    if (result && Array.isArray(result)) {
+      // Process messages into conversations format
+      const processedMessages = result.map((msg: any) => ({
+        id: msg._id,
+        sender: msg.sender._id === user._id ? 'me' : 'other',
+        content: msg.content,
+        timestamp: new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        type: 'text',
+        isRead: msg.isRead,
+        senderId: msg.sender._id,
+        receiverId: msg.receiver._id
+      }));
+      setMessages(processedMessages);
+    } else {
+      // Use mock data as fallback when API fails
       setMessages(mockMessages);
-    } finally {
-      setLoading(false);
     }
+    
+    setLoading(false);
   };
 
   const currentConversation = conversations.find(c => c.id === selectedConversation);
@@ -186,40 +192,36 @@ const Messages = () => {
     if (!messageText.trim() || !selectedConversation || !user) return;
     
     setSending(true);
-    try {
-      // Find the conversation to get the receiver ID
-      const conversation = conversations.find(c => c.id === selectedConversation);
-      if (!conversation) return;
+    
+    const result = await handleAsyncOperation(
+      async () => {
+        // Find the conversation to get the receiver ID
+        const conversation = conversations.find(c => c.id === selectedConversation);
+        if (!conversation) {
+          throw new Error('Conversation not found');
+        }
 
-      const result = await apiService.sendMessage({
-        receiver: conversation.userId, // This would need to be added to conversation data
-        content: messageText.trim()
-      });
+        const apiResult = await apiService.sendMessage({
+          receiver: conversation.userId, // This would need to be added to conversation data
+          content: messageText.trim()
+        });
 
-      if (result.data) {
-        setMessageText('');
-        // Reload messages
-        await loadMessages();
-        toast({
-          title: "Message sent",
-          description: "Your message has been sent successfully."
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: result.error || "Failed to send message",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to send message",
-        variant: "destructive"
-      });
-    } finally {
-      setSending(false);
+        if (apiResult.error) {
+          throw new Error(apiResult.error);
+        }
+        
+        return apiResult.data;
+      },
+      "Your message has been sent successfully.",
+      "Failed to Send Message"
+    );
+
+    if (result) {
+      setMessageText('');
+      await loadMessages();
     }
+    
+    setSending(false);
   };
 
   return (

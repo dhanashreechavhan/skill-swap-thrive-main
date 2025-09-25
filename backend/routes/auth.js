@@ -16,7 +16,10 @@ router.post('/register', ...authValidation.register(), async (req, res) => {
         // Check if user exists
         const existingUser = await User.findOne({ email });
         if (existingUser) {
-            return res.status(400).json({ message: 'Email already registered' });
+            return res.status(409).json({ 
+                message: 'An account with this email address already exists. Please use a different email or try logging in instead.',
+                field: 'email'
+            });
         }
 
         // Create user with email verification disabled
@@ -45,7 +48,10 @@ router.post('/register', ...authValidation.register(), async (req, res) => {
         });
     } catch (error) {
         console.error('Registration error:', error);
-        res.status(500).json({ message: 'Server error', error: error.message });
+        res.status(500).json({ 
+            message: 'We encountered an issue while creating your account. Please try again in a few moments.',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });
 
@@ -60,7 +66,10 @@ router.get('/verify-email/:token', async (req, res) => {
         });
 
         if (!user) {
-            return res.status(400).json({ message: 'Invalid or expired verification token' });
+            return res.status(400).json({ 
+                message: 'This verification link is invalid or has expired. Please request a new verification email.',
+                field: 'token'
+            });
         }
 
         user.isEmailVerified = true;
@@ -70,7 +79,10 @@ router.get('/verify-email/:token', async (req, res) => {
 
         res.json({ message: 'Email verified successfully' });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        res.status(500).json({ 
+            message: 'We encountered an issue while processing your request. Please try again or contact support.',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });
 
@@ -82,26 +94,40 @@ router.post('/login', ...authValidation.login(), async (req, res) => {
         // Find user
         const user = await User.findOne({ email });
         if (!user) {
-            return res.status(400).json({ message: 'Invalid credentials' });
+            return res.status(401).json({ 
+                message: 'No account found with this email address. Please check your email or create a new account.',
+                field: 'email'
+            });
         }
 
         // Check if account is locked
         if (user.isLocked()) {
+            const lockoutTime = Math.ceil((user.lockUntil - Date.now()) / (1000 * 60)); // minutes remaining
             return res.status(423).json({
-                message: 'Account is temporarily locked. Please try again later.'
+                message: `Your account is temporarily locked due to multiple failed login attempts. Please try again in ${lockoutTime > 0 ? lockoutTime + ' minutes' : 'a few minutes'}.`,
+                field: 'account'
             });
         }
 
         // Check if user is banned
         if (user.profile?.isBanned) {
-            return res.status(403).json({ message: 'Your account has been banned. Please contact support.' });
+            return res.status(403).json({ 
+                message: 'Your account has been suspended. If you believe this is an error, please contact our support team for assistance.',
+                field: 'account'
+            });
         }
 
         // Check password
         const isMatch = await user.comparePassword(password);
         if (!isMatch) {
             await user.incrementLoginAttempts();
-            return res.status(400).json({ message: 'Invalid credentials' });
+            const attemptsLeft = Math.max(0, 5 - (user.loginAttempts || 0));
+            return res.status(401).json({ 
+                message: attemptsLeft > 1 
+                    ? `Incorrect password. You have ${attemptsLeft} attempts remaining before your account is temporarily locked.`
+                    : 'Incorrect password. Your account will be temporarily locked after one more failed attempt.',
+                field: 'password'
+            });
         }
 
         // Reset login attempts on successful login
@@ -124,7 +150,10 @@ router.post('/login', ...authValidation.login(), async (req, res) => {
             }
         });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        res.status(500).json({ 
+            message: 'We encountered an issue while processing your request. Please try again or contact support.',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });
 
@@ -141,7 +170,10 @@ router.post('/forgot-password', ...authValidation.email(), async (req, res) => {
         // Email service is disabled - return message
         res.json({ message: 'Password reset feature is currently disabled. Please contact support.' });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        res.status(500).json({ 
+            message: 'We encountered an issue while processing your request. Please try again or contact support.',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });
 
@@ -150,7 +182,10 @@ router.post('/reset-password/:token', ...authValidation.resetPassword(), async (
     try {
         res.status(400).json({ message: 'Password reset feature is currently disabled. Please contact support.' });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        res.status(500).json({ 
+            message: 'We encountered an issue while processing your request. Please try again or contact support.',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });
 
@@ -162,7 +197,10 @@ router.post('/change-password', auth, ...authValidation.changePassword(), async 
 
         const isMatch = await user.comparePassword(currentPassword);
         if (!isMatch) {
-            return res.status(400).json({ message: 'Current password is incorrect' });
+            return res.status(401).json({ 
+                message: 'The current password you entered is incorrect. Please try again.',
+                field: 'currentPassword'
+            });
         }
 
         user.password = newPassword;
@@ -171,7 +209,10 @@ router.post('/change-password', auth, ...authValidation.changePassword(), async 
         console.log('✅ Password changed successfully for user:', user.email);
         res.json({ message: 'Password changed successfully' });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        res.status(500).json({ 
+            message: 'We encountered an issue while processing your request. Please try again or contact support.',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });
 
@@ -181,7 +222,10 @@ router.post('/resend-verification', auth, async (req, res) => {
         const user = await User.findById(req.user.userId);
 
         if (user.isEmailVerified) {
-            return res.status(400).json({ message: 'Email is already verified' });
+            return res.status(400).json({ 
+                message: 'Your email address is already verified. No further action is needed.',
+                field: 'email'
+            });
         }
 
         // Automatically verify email since email service is disabled
@@ -192,7 +236,10 @@ router.post('/resend-verification', auth, async (req, res) => {
 
         res.json({ message: 'Email verification bypassed - account is now verified' });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        res.status(500).json({ 
+            message: 'We encountered an issue while processing your request. Please try again or contact support.',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });
 

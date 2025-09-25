@@ -201,7 +201,7 @@ const skillValidation = {
       .escape(),
     query('category')
       .optional()
-      .isIn(['all', 'Technology', 'Language', 'Art', 'Music', 'Sports', 'Cooking', 'Academic', 'Business', 'Other'])
+      .isIn(['all', 'technology', 'language', 'art', 'music', 'sports', 'cooking', 'academic', 'business', 'other', 'Technology', 'Language', 'Art', 'Music', 'Sports', 'Cooking', 'Academic', 'Business', 'Other'])
       .withMessage('Invalid category'),
     query('level')
       .optional()
