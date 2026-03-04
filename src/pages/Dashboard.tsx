@@ -576,6 +576,10 @@ const Dashboard = () => {
                   <Users className="mr-2 h-4 w-4" />
                   View Interested Students
                 </Button>
+                <Button className="w-full justify-start" variant="outline" onClick={() => navigate(`/reviews/${user._id}`)}>
+                <Star className="mr-2 h-4 w-4" />
+                My Reviews
+                </Button>
               </CardContent>
             </Card>
           </div>

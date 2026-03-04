@@ -1,8 +1,11 @@
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
+
+
 const {
   rateLimiters,
   securityHeaders,
@@ -227,6 +230,7 @@ const scheduleRoutes = require('./routes/schedules');
 const adminRoutes = require('./routes/admin');
 const matchingRoutes = require('./routes/matching');
 const ratingRoutes = require('./routes/ratings');
+const reviewsRouter = require('./routes/reviews');
 
 // User-specific rate limiting for authentication
 const userRateLimit = createUserRateLimit();
@@ -253,6 +257,7 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/schedules', scheduleRoutes);
 app.use('/api/matching', rateLimiters.search, matchingRoutes);
 app.use('/api/ratings', ratingRoutes);
+app.use('/api/reviews', reviewsRouter); 
 app.use('/api/admin', rateLimiters.admin, adminRoutes);
 
 // Security error handling middleware

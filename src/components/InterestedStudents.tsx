@@ -29,6 +29,9 @@ interface InterestedStudent {
       location?: string;
       bio?: string;
     };
+    avgRating?: number;
+    totalReviews?: number;
+
   };
   skill: {
     _id: string;
@@ -54,6 +57,28 @@ export const InterestedStudents = () => {
   const [error, setError] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const { toast } = useToast();
+  const [studentRatings, setStudentRatings] = useState<Record<string, {avg: number, total: number}>>({});
+
+const fetchRatings = async (students: InterestedStudent[]) => {
+  const token = localStorage.getItem("token");
+  const ratings: Record<string, {avg: number, total: number}> = {};
+  await Promise.all(
+    students.map(async (match) => {
+      try {
+        const res = await fetch(
+          `http://localhost:5000/api/reviews/user/${match.student._id}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const data = await res.json();
+        ratings[match.student._id] = {
+          avg: data.stats?.averageRating || 0,
+          total: data.stats?.totalReviews || 0
+        };
+      } catch { /* silent */ }
+    })
+  );
+  setStudentRatings(ratings);
+};
   const navigate = useNavigate();
 
   const loadInterestedStudents = async () => {
@@ -68,6 +93,7 @@ export const InterestedStudents = () => {
         const data = result.data as any;
         if (data && data.interestedStudents && Array.isArray(data.interestedStudents)) {
           setInterestedStudents(data.interestedStudents);
+          fetchRatings(data.interestedStudents);
         } else {
           console.log('No interested students array found in response:', data);
           setInterestedStudents([]);
@@ -246,6 +272,21 @@ export const InterestedStudents = () => {
                         <MapPin className="h-3 w-3" />
                         {match.student.profile?.location || 'Location not specified'}
                       </div>
+                      <div className="flex items-center gap-1 text-sm mt-1">
+  <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
+  {studentRatings[match.student._id]?.avg
+    ? <>
+        <span className="font-medium text-slate-700">
+          {studentRatings[match.student._id].avg.toFixed(1)}
+        </span>
+        <span className="text-muted-foreground">
+          ({studentRatings[match.student._id].total} {studentRatings[match.student._id].total === 1 ? 'review' : 'reviews'})
+        </span>
+      </>
+    : <span className="text-muted-foreground text-xs">No reviews yet</span>
+  }
+</div>
+
                       {match.lastContactDate && (
                         <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                           <Clock className="h-3 w-3" />
@@ -324,6 +365,19 @@ export const InterestedStudents = () => {
                     <MessageSquare className="h-4 w-4 mr-2" />
                     Message
                   </Button>
+
+                  <Button 
+  variant="outline"
+  onClick={() => navigate(`/reviews/${match.student._id}`)}
+>
+  <Star className="h-4 w-4 mr-2" />
+  Review
+</Button>
+
+
+
+
+
                 </div>
               </div>
             );
