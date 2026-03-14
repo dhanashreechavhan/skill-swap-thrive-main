@@ -255,260 +255,291 @@ const Schedule = () => {
 
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen" style={{background: "linear-gradient(135deg, #faf5ff 0%, #eff6ff 50%, #fdf4ff 100%)"}}>
       <Header isLoggedIn={true} />
-      
-      <main className="container py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Schedule Sessions</h1>
-          <p className="text-muted-foreground">Manage your learning and teaching sessions</p>
-        </div>
 
-        <div className="space-y-8">
+      <main className="container py-8 max-w-5xl mx-auto px-4">
 
-          {/* Upcoming Sessions */}
-          <div className="space-y-8">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-semibold">Your Upcoming Sessions</h2>
-              <Button onClick={() => setShowNewSessionForm(!showNewSessionForm)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Schedule New Session
-              </Button>
+        {/* Hero Banner */}
+        <div className="rounded-3xl p-8 mb-8 text-white relative overflow-hidden"
+          style={{background: "linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)"}}>
+          <div className="absolute inset-0 opacity-20" style={{
+            backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)",
+            backgroundSize: "28px 28px"
+          }} />
+          <div className="absolute -top-10 -right-10 w-48 h-48 bg-white/10 rounded-full blur-2xl" />
+          <div className="relative z-10 flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <h1 className="text-3xl font-black mb-1">Schedule Sessions 📅</h1>
+              <p className="text-white/70">Manage your learning and teaching sessions</p>
             </div>
-
-            {/* New Session Form */}
-            {showNewSessionForm && (
-              <Card className="border-primary/20 bg-primary/5">
-                <CardHeader>
-                  <CardTitle>{editingId ? 'Edit Session' : 'Schedule a New Session'}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Session Title</label>
-                      {editingId ? (
-                        <Input placeholder="e.g., React Hooks Deep Dive" value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} />
-                      ) : (
-                        <Input placeholder="e.g., React Hooks Deep Dive" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-                      )}
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Choose Skill & Teacher *</label>
-                      <Select value={editingId ? editForm.skillId : form.skillId} onValueChange={(v) => editingId ? setEditForm({ ...editForm, skillId: v }) : setForm({ ...form, skillId: v })}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a skill and teacher" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {skills
-                            .filter((sk: any) => sk.offeredBy && sk.offeredBy.name) // Only show skills with valid teachers
-                            .length === 0 ? (
-                            <div className="p-4 text-center text-muted-foreground text-sm">
-                              No available skills with teachers found.
-                              <br />Please check back later or browse skills to find teachers.
-                            </div>
-                          ) : (
-                            skills
-                              .filter((sk: any) => sk.offeredBy && sk.offeredBy.name)
-                              .map((sk: any) => (
-                              <SelectItem key={sk._id} value={sk._id}>
-                                <div className="flex flex-col">
-                                  <span className="font-medium">{sk.name || sk.title || 'Skill'}</span>
-                                  <span className="text-sm text-muted-foreground">
-                                    by {sk.offeredBy?.name || 'Unknown Teacher'}
-                                    {sk.offeredBy?.profile?.location && ` • ${sk.offeredBy.profile.location}`}
-                                  </span>
-                                </div>
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  {/* Selected Skill Info */}
-                  {(editingId ? editForm.skillId : form.skillId) && (
-                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                      {(() => {
-                        const selectedSkill = skills.find((sk: any) => sk._id === (editingId ? editForm.skillId : form.skillId));
-                        if (!selectedSkill) return null;
-                        return (
-                          <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-medium">
-                              {selectedSkill.offeredBy?.name ? selectedSkill.offeredBy.name.charAt(0).toUpperCase() : 'T'}
-                            </div>
-                            <div>
-                              <p className="font-medium text-blue-900">
-                                You'll be learning {selectedSkill.name} with {selectedSkill.offeredBy?.name || 'Unknown Teacher'}
-                              </p>
-                              <p className="text-sm text-blue-600">
-                                {selectedSkill.offeredBy?.profile?.location || 'Location not specified'} • {selectedSkill.category} • {selectedSkill.level} level
-                              </p>
-                            </div>
-                          </div>
-                        );
-                      })()} 
-                    </div>
-                  )}
-
-                  <div className="grid md:grid-cols-3 gap-6">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Date *</label>
-                      <Input type="date" value={editingId ? editForm.date : form.date} onChange={(e) => editingId ? setEditForm({ ...editForm, date: e.target.value }) : setForm({ ...form, date: e.target.value })} />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Start Time *</label>
-                      <Select value={editingId ? editForm.startTime : form.startTime} onValueChange={(v) => editingId ? setEditForm({ ...editForm, startTime: v }) : setForm({ ...form, startTime: v })}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select time" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {timeSlots.map((time) => (
-                            <SelectItem key={time} value={time}>
-                              {time}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">End Time *</label>
-                      <Select value={editingId ? editForm.endTime : form.endTime} onValueChange={(v) => editingId ? setEditForm({ ...editForm, endTime: v }) : setForm({ ...form, endTime: v })}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select duration" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {timeSlots.map((time) => (
-                            <SelectItem key={time} value={time}>{time}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Session Description</label>
-                    <Textarea 
-                      placeholder="What will you cover in this session? Include any preparation materials or goals..."
-                      className="min-h-24"
-                      value={editingId ? editForm.description : form.description}
-                      onChange={(e) => editingId ? setEditForm({ ...editForm, description: e.target.value }) : setForm({ ...form, description: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Meeting Link</label>
-                      <Input placeholder="https://..." value={editingId ? editForm.meetingLink : form.meetingLink} onChange={(e) => editingId ? setEditForm({ ...editForm, meetingLink: e.target.value }) : setForm({ ...form, meetingLink: e.target.value })} />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Notes</label>
-                      <Textarea placeholder="Add details for your session" value={editingId ? editForm.notes : form.notes} onChange={(e) => editingId ? setEditForm({ ...editForm, notes: e.target.value }) : setForm({ ...form, notes: e.target.value })} />
-                    </div>
-                  </div>
-
-                  {editingId && (
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Status</label>
-                      <Select value={editForm.status} onValueChange={(v) => setEditForm({ ...editForm, status: v })}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Pending">Pending</SelectItem>
-                          <SelectItem value="Confirmed">Confirmed</SelectItem>
-                          <SelectItem value="Completed">Completed</SelectItem>
-                          <SelectItem value="Cancelled">Cancelled</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-
-                  <div className="flex gap-4">
-                    {editingId ? (
-                      <Button onClick={handleSaveEdit} disabled={loading}>Save Changes</Button>
-                    ) : (
-                      <Button onClick={handleCreate} disabled={loading}>Schedule Session</Button>
-                    )}
-                    <Button variant="outline" onClick={() => setShowNewSessionForm(false)}>
-                      Cancel
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Sessions List */}
-            <div className="space-y-6">
-              {error && (<div className="text-sm text-red-600">{error}</div>)}
-              {loading && (<div className="text-sm">Loading sessions...</div>)}
-              {sessions.map((session) => (
-                <Card key={session.id} className="hover:shadow-lg transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-xl font-semibold">{session.title}</h3>
-                          <Badge variant={session.type === 'learning' ? 'default' : 'secondary'}>
-                            {session.type === 'learning' ? 'Learning' : 'Teaching'}
-                          </Badge>
-                          <Badge 
-                            className={
-                              session.status === 'confirmed' 
-                                ? 'bg-green-100 text-green-700' 
-                                : 'bg-yellow-100 text-yellow-700'
-                            }
-                          >
-                            {session.status}
-                          </Badge>
-                        </div>
-
-                        <div className="flex items-center gap-6 mb-3 text-sm">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-medium">
-                              {session.partnerAvatar}
-                            </div>
-                            <span>with {session.partner}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                            <span>{session.date}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-4 w-4 text-muted-foreground" />
-                            <span>{session.time}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Video className="h-4 w-4 text-muted-foreground" />
-                            <span>{session.format}</span>
-                          </div>
-                        </div>
-
-                        <p className="text-muted-foreground mb-4">{session.description}</p>
-
-                        <Badge variant="outline">{session.skill}</Badge>
-                      </div>
-
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={() => { const url = session.raw?.meetingLink || '#'; window.open(url, '_blank', 'noopener'); }}>
-                          <Video className="mr-2 h-4 w-4" />
-                          Join Session
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => startEdit(session)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleDelete(session.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <button
+              onClick={() => setShowNewSessionForm(!showNewSessionForm)}
+              className="flex items-center gap-2 px-6 py-3 bg-white text-violet-700 font-bold rounded-2xl hover:bg-amber-50 transition-colors shadow-lg"
+            >
+              <Plus className="w-4 h-4" />
+              Schedule New Session
+            </button>
           </div>
         </div>
+
+        {/* New / Edit Session Form */}
+        {showNewSessionForm && (
+          <div className="bg-white rounded-3xl border border-violet-100 shadow-lg p-6 mb-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-white"
+                style={{background: "linear-gradient(135deg, #667eea, #764ba2)"}}>
+                <CalendarIcon className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="font-black text-slate-900">{editingId ? 'Edit Session' : 'Schedule a New Session'}</h2>
+                <p className="text-xs text-slate-500">Fill in the details below</p>
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Session Notes</label>
+                <input
+                  placeholder="e.g., React Hooks Deep Dive"
+                  value={editingId ? editForm.notes : form.notes}
+                  onChange={(e) => editingId ? setEditForm({...editForm, notes: e.target.value}) : setForm({...form, notes: e.target.value})}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Choose Skill & Teacher *</label>
+                <select
+                  value={editingId ? editForm.skillId : form.skillId}
+                  onChange={(e) => editingId ? setEditForm({...editForm, skillId: e.target.value}) : setForm({...form, skillId: e.target.value})}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:border-violet-400"
+                >
+                  <option value="">Select a skill and teacher</option>
+                  {skills.filter((sk: any) => sk.offeredBy?.name).map((sk: any) => (
+                    <option key={sk._id} value={sk._id}>
+                      {sk.name} — by {sk.offeredBy?.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Selected skill info */}
+            {(editingId ? editForm.skillId : form.skillId) && (() => {
+              const sel = skills.find((sk: any) => sk._id === (editingId ? editForm.skillId : form.skillId));
+              if (!sel) return null;
+              return (
+                <div className="bg-violet-50 border border-violet-200 rounded-2xl p-4 mb-4 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold"
+                    style={{background: "linear-gradient(135deg, #667eea, #764ba2)"}}>
+                    {sel.offeredBy?.name?.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="font-bold text-violet-900 text-sm">Learning {sel.name} with {sel.offeredBy?.name}</p>
+                    <p className="text-xs text-violet-600">{sel.category} • {sel.level} level</p>
+                  </div>
+                </div>
+              );
+            })()}
+
+            <div className="grid md:grid-cols-3 gap-4 mb-4">
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Date *</label>
+                <input type="date"
+                  value={editingId ? editForm.date : form.date}
+                  onChange={(e) => editingId ? setEditForm({...editForm, date: e.target.value}) : setForm({...form, date: e.target.value})}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:border-violet-400"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Start Time *</label>
+                <select
+                  value={editingId ? editForm.startTime : form.startTime}
+                  onChange={(e) => editingId ? setEditForm({...editForm, startTime: e.target.value}) : setForm({...form, startTime: e.target.value})}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:border-violet-400"
+                >
+                  <option value="">Select time</option>
+                  {timeSlots.map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">End Time *</label>
+                <select
+                  value={editingId ? editForm.endTime : form.endTime}
+                  onChange={(e) => editingId ? setEditForm({...editForm, endTime: e.target.value}) : setForm({...form, endTime: e.target.value})}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:border-violet-400"
+                >
+                  <option value="">Select time</option>
+                  {timeSlots.map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Meeting Link</label>
+                <input
+                  placeholder="https://meet.google.com/..."
+                  value={editingId ? editForm.meetingLink : form.meetingLink}
+                  onChange={(e) => editingId ? setEditForm({...editForm, meetingLink: e.target.value}) : setForm({...form, meetingLink: e.target.value})}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:border-violet-400"
+                />
+              </div>
+              {editingId && (
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Status</label>
+                  <select
+                    value={editForm.status}
+                    onChange={(e) => setEditForm({...editForm, status: e.target.value})}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:border-violet-400"
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="Confirmed">Confirmed</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Cancelled">Cancelled</option>
+                  </select>
+                </div>
+              )}
+            </div>
+
+            <div className="mb-6">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Description</label>
+              <textarea
+                placeholder="What will you cover in this session?"
+                rows={3}
+                value={editingId ? editForm.description : form.description}
+                onChange={(e) => editingId ? setEditForm({...editForm, description: e.target.value}) : setForm({...form, description: e.target.value})}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:border-violet-400 resize-none"
+              />
+            </div>
+
+            {error && <p className="text-rose-500 text-sm mb-4 bg-rose-50 px-4 py-2 rounded-xl">{error}</p>}
+
+            <div className="flex gap-3">
+              <button
+                onClick={editingId ? handleSaveEdit : handleCreate}
+                disabled={loading}
+                className="px-6 py-2.5 text-white font-bold rounded-2xl disabled:opacity-50 hover:opacity-90 shadow-sm"
+                style={{background: "linear-gradient(135deg, #667eea, #764ba2)"}}
+              >
+                {loading ? "Saving..." : editingId ? "Save Changes" : "Schedule Session"}
+              </button>
+              <button
+                onClick={() => { setShowNewSessionForm(false); setEditingId(null); }}
+                className="px-6 py-2.5 border border-slate-200 text-slate-700 font-semibold rounded-2xl hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Sessions List */}
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xl font-black text-slate-900">Your Upcoming Sessions</h2>
+          <span className="text-sm text-slate-500">{sessions.length} session{sessions.length !== 1 ? 's' : ''}</span>
+        </div>
+
+        {loading && (
+          <div className="flex items-center justify-center py-16 gap-3">
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
+              style={{background: "linear-gradient(135deg, #667eea, #764ba2)"}}>
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            </div>
+            <p className="text-slate-500">Loading sessions...</p>
+          </div>
+        )}
+
+        {!loading && sessions.length === 0 && (
+          <div className="text-center py-16 bg-white rounded-3xl border border-slate-100">
+            <div className="w-16 h-16 rounded-3xl bg-violet-50 flex items-center justify-center mx-auto mb-4">
+              <CalendarIcon className="w-8 h-8 text-violet-400" />
+            </div>
+            <h3 className="text-lg font-black text-slate-800 mb-2">No sessions scheduled</h3>
+            <p className="text-slate-400 text-sm mb-4">Schedule your first skill exchange session!</p>
+            <button onClick={() => setShowNewSessionForm(true)}
+              className="px-6 py-2.5 text-white font-bold rounded-2xl shadow-sm hover:opacity-90"
+              style={{background: "linear-gradient(135deg, #667eea, #764ba2)"}}>
+              Schedule Now
+            </button>
+          </div>
+        )}
+
+        <div className="space-y-4">
+          {sessions.map((session) => (
+            <div key={session.id}
+              className="bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all overflow-hidden">
+              <div className="h-1" style={{background: "linear-gradient(90deg, #667eea, #764ba2, #f093fb)"}} />
+              <div className="p-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-4 flex-1">
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-black text-sm flex-shrink-0"
+                      style={{background: "linear-gradient(135deg, #667eea, #764ba2)"}}>
+                      {session.partnerAvatar}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 flex-wrap mb-2">
+                        <h3 className="text-lg font-black text-slate-900">{session.title}</h3>
+                        <span className={`px-2.5 py-0.5 rounded-lg text-xs font-bold ${session.type === 'learning' ? 'bg-violet-100 text-violet-700' : 'bg-indigo-100 text-indigo-700'}`}>
+                          {session.type === 'learning' ? 'Learning' : 'Teaching'}
+                        </span>
+                        <span className={`px-2.5 py-0.5 rounded-lg text-xs font-bold ${
+                          session.status === 'confirmed' ? 'bg-emerald-100 text-emerald-700' :
+                          session.status === 'completed' ? 'bg-slate-100 text-slate-600' :
+                          session.status === 'cancelled' ? 'bg-rose-100 text-rose-600' :
+                          'bg-amber-100 text-amber-700'
+                        }`}>
+                          {session.status}
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 mb-3">
+                        <span className="flex items-center gap-1">
+                          <Users className="w-3.5 h-3.5" /> with {session.partner}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <CalendarIcon className="w-3.5 h-3.5" /> {session.date}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5" /> {session.time}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Video className="w-3.5 h-3.5" /> {session.format}
+                        </span>
+                      </div>
+
+                      {session.description && (
+                        <p className="text-sm text-slate-500 mb-3">{session.description}</p>
+                      )}
+
+                      <span className="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs font-medium">
+                        {session.skill}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => window.open(session.raw?.meetingLink || '#', '_blank', 'noopener')}
+                      className="flex items-center gap-1.5 px-4 py-2 text-white text-sm font-bold rounded-xl hover:opacity-90 shadow-sm"
+                      style={{background: "linear-gradient(135deg, #667eea, #764ba2)"}}>
+                      <Video className="w-3.5 h-3.5" /> Join
+                    </button>
+                    <button onClick={() => startEdit(session)}
+                      className="w-9 h-9 rounded-xl bg-slate-50 hover:bg-violet-50 border border-slate-200 flex items-center justify-center transition-colors">
+                      <Edit className="w-4 h-4 text-slate-500" />
+                    </button>
+                    <button onClick={() => handleDelete(session.id)}
+                      className="w-9 h-9 rounded-xl bg-slate-50 hover:bg-rose-50 border border-slate-200 flex items-center justify-center transition-colors">
+                      <Trash2 className="w-4 h-4 text-slate-500" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
       </main>
     </div>
   );

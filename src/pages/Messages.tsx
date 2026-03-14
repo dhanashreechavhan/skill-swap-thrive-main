@@ -151,24 +151,32 @@ useEffect(() => {
   );
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{background: "linear-gradient(135deg, #faf5ff 0%, #eff6ff 50%, #fdf4ff 100%)"}}>
       <Header isLoggedIn={true} />
 
-      <div className="flex-1 container py-6">
-        <div className="flex h-[75vh] bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="flex-1 container py-6 max-w-6xl mx-auto px-4">
 
-          {/* LEFT SIDE — Conversation list */}
+        {/* Page title */}
+        <div className="mb-5">
+          <h1 className="text-2xl font-black text-slate-900">Messages</h1>
+          <p className="text-slate-500 text-sm">Chat with your skill exchange partners</p>
+        </div>
+
+        <div className="flex h-[76vh] bg-white rounded-3xl border border-slate-100 shadow-xl overflow-hidden">
+
+          {/* LEFT — Conversation list */}
           <div className="w-80 border-r border-slate-100 flex flex-col flex-shrink-0">
+
             {/* Header */}
-            <div className="p-4 border-b border-slate-100">
-              <h2 className="text-lg font-bold text-slate-800 mb-3">Messages</h2>
+            <div className="p-4 border-b border-slate-100"
+              style={{background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"}}>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <Input
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/60" />
+                <input
                   placeholder="Search conversations..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-9 bg-slate-50 border-slate-200 text-sm"
+                  className="w-full pl-9 pr-4 py-2 bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl text-sm text-white placeholder:text-white/60 outline-none focus:bg-white/30"
                 />
               </div>
             </div>
@@ -192,21 +200,17 @@ useEffect(() => {
                     onClick={() => openConversation(conv.userId)}
                     className={cn(
                       "w-full flex items-center gap-3 p-4 hover:bg-slate-50 transition-colors text-left border-b border-slate-50",
-                      selectedUserId === conv.userId && "bg-violet-50 border-l-2 border-l-violet-600"
+                      selectedUserId === conv.userId && "bg-violet-50 border-l-4 border-l-violet-500"
                     )}
                   >
-                    {/* Avatar */}
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-400 to-indigo-500 flex items-center justify-center flex-shrink-0">
-                      <span className="text-white font-bold text-sm">
-                        {conv.name.charAt(0).toUpperCase()}
-                      </span>
+                    <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 text-white font-bold text-sm"
+                      style={{background: "linear-gradient(135deg, #667eea, #764ba2)"}}>
+                      {conv.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-center">
-                        <p className="font-semibold text-sm text-slate-800 truncate">{conv.name}</p>
-                        <span className="text-xs text-slate-400 flex-shrink-0 ml-1">
-                          {timeAgo(conv.lastTime)}
-                        </span>
+                        <p className="font-bold text-sm text-slate-800 truncate">{conv.name}</p>
+                        <span className="text-xs text-slate-400 flex-shrink-0 ml-1">{timeAgo(conv.lastTime)}</span>
                       </div>
                       <div className="flex justify-between items-center mt-0.5">
                         <p className="text-xs text-slate-500 truncate">{conv.lastMessage}</p>
@@ -223,36 +227,42 @@ useEffect(() => {
             </div>
           </div>
 
-          {/* RIGHT SIDE — Chat window */}
+          {/* RIGHT — Chat window */}
           <div className="flex-1 flex flex-col">
             {!selectedUserId ? (
-              // No conversation selected
-              <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-8">
-                <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
-                  <MessageSquare className="w-8 h-8 text-slate-300" />
+              <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center px-8">
+                <div className="w-20 h-20 rounded-3xl flex items-center justify-center"
+                  style={{background: "linear-gradient(135deg, #667eea20, #f093fb20)"}}>
+                  <MessageSquare className="w-10 h-10 text-violet-400" />
                 </div>
-                <h3 className="text-lg font-semibold text-slate-700">Select a conversation</h3>
-                <p className="text-sm text-slate-400 max-w-xs">
-                  Choose someone from the left to start chatting with your skill exchange partner!
-                </p>
+                <div>
+                  <h3 className="text-lg font-black text-slate-800">Select a conversation</h3>
+                  <p className="text-sm text-slate-400 max-w-xs mt-1">
+                    Choose someone from the left to start chatting!
+                  </p>
+                </div>
               </div>
             ) : (
               <>
                 {/* Chat header */}
-                <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-400 to-indigo-500 flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">
-                      {selectedUser?.name.charAt(0).toUpperCase()}
-                    </span>
+                <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100 bg-white">
+                  <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-white font-bold text-sm"
+                    style={{background: "linear-gradient(135deg, #667eea, #764ba2)"}}>
+                    {selectedUser?.name.charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <p className="font-semibold text-slate-800 text-sm">{selectedUser?.name}</p>
+                    <p className="font-black text-slate-900 text-sm">{selectedUser?.name}</p>
                     <p className="text-xs text-slate-400">{selectedUser?.email}</p>
+                  </div>
+                  <div className="ml-auto flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                    <span className="text-xs text-slate-400">Online</span>
                   </div>
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-5 space-y-3">
+                <div className="flex-1 overflow-y-auto p-5 space-y-3"
+                  style={{background: "linear-gradient(135deg, #faf5ff 0%, #eff6ff 100%)"}}>
                   {chatMessages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full gap-2">
                       <p className="text-sm text-slate-400">No messages yet!</p>
@@ -264,17 +274,16 @@ useEffect(() => {
                       return (
                         <div key={msg._id} className={cn("flex", isMe ? "justify-end" : "justify-start")}>
                           <div className={cn(
-                            "max-w-[70%] rounded-2xl px-4 py-2.5 text-sm",
+                            "max-w-[70%] rounded-2xl px-4 py-2.5 text-sm shadow-sm",
                             isMe
-                              ? "bg-violet-600 text-white rounded-br-sm"
-                              : "bg-slate-100 text-slate-800 rounded-bl-sm"
-                          )}>
+                              ? "text-white rounded-br-sm"
+                              : "bg-white text-slate-800 rounded-bl-sm border border-slate-100"
+                          )}
+                          style={isMe ? {background: "linear-gradient(135deg, #667eea, #764ba2)"} : {}}>
                             <p className="leading-relaxed">{msg.content}</p>
-                            <p className={cn("text-xs mt-1", isMe ? "text-violet-200" : "text-slate-400")}>
+                            <p className={cn("text-xs mt-1", isMe ? "text-white/60" : "text-slate-400")}>
                               {timeAgo(msg.createdAt)}
-                              {isMe && (
-                                <span className="ml-1">{msg.isRead ? " ✓✓" : " ✓"}</span>
-                              )}
+                              {isMe && <span className="ml-1">{msg.isRead ? " ✓✓" : " ✓"}</span>}
                             </p>
                           </div>
                         </div>
@@ -284,23 +293,24 @@ useEffect(() => {
                   <div ref={bottomRef} />
                 </div>
 
-                {/* Message input */}
-                <div className="p-4 border-t border-slate-100">
+                {/* Input */}
+                <div className="p-4 border-t border-slate-100 bg-white">
                   <div className="flex gap-2">
-                    <Input
+                    <input
                       placeholder="Type a message..."
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
-                      className="flex-1 bg-slate-50 border-slate-200 focus-visible:ring-violet-400"
+                      className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                     />
-                    <Button
+                    <button
                       onClick={sendMessage}
                       disabled={sending || !newMessage.trim()}
-                      className="bg-violet-600 hover:bg-violet-700 px-4"
+                      className="w-10 h-10 rounded-2xl flex items-center justify-center text-white disabled:opacity-50 transition-opacity"
+                      style={{background: "linear-gradient(135deg, #667eea, #764ba2)"}}
                     >
                       <Send className="w-4 h-4" />
-                    </Button>
+                    </button>
                   </div>
                   <p className="text-xs text-slate-400 mt-1.5 ml-1">Press Enter to send</p>
                 </div>
@@ -311,6 +321,6 @@ useEffect(() => {
       </div>
     </div>
   );
-};
+  };
 
 export default Messages;
