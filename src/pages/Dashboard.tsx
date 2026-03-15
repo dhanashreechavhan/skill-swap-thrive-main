@@ -23,6 +23,7 @@ import { useEffect, useState } from "react";
 import { apiService, buildAssetUrl, API_BASE_URL, ASSET_BASE_URL } from "@/lib/api";
 import { InterestedStudents } from "@/components/InterestedStudents";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -467,6 +468,78 @@ const Dashboard = () => {
                   </div>
                 )}
               </div>
+
+              {/* Skills Visualization Dashboard */}
+<div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
+  <div className="flex items-center gap-3 mb-6">
+    <div className="w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center">
+      <TrendingUp className="w-5 h-5 text-violet-600" />
+    </div>
+    <div>
+      <h3 className="font-black text-slate-900">Skills Visualization</h3>
+      <p className="text-xs text-slate-500">Your skills at a glance</p>
+    </div>
+  </div>
+
+  {/* Bar Chart - Teaching vs Learning */}
+  <div className="mb-6">
+    <h4 className="text-sm font-bold text-slate-700 mb-3">Teaching vs Learning Skills</h4>
+    <ResponsiveContainer width="100%" height={200}>
+      <BarChart data={[
+        { name: 'Teaching', count: getSkillCount(profile?.skillsTeaching) },
+        { name: 'Learning', count: getSkillCount(profile?.skillsLearning) },
+        { name: 'Sessions', count: upcomingSessions.length },
+      ]}>
+        <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+        <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+        <Tooltip />
+        <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+          <Cell fill="#667eea" />
+          <Cell fill="#f093fb" />
+          <Cell fill="#764ba2" />
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  </div>
+
+  {/* Pie Chart - Skill Categories */}
+  <div>
+    <h4 className="text-sm font-bold text-slate-700 mb-3">Skills Breakdown</h4>
+    {profile?.skillsTeaching?.length > 0 || profile?.skillsLearning?.length > 0 ? (
+      <ResponsiveContainer width="100%" height={220}>
+        <PieChart>
+          <Pie
+            data={[
+              { name: 'Teaching', value: getSkillCount(profile?.skillsTeaching) || 1 },
+              { name: 'Learning', value: getSkillCount(profile?.skillsLearning) || 1 },
+            ]}
+            cx="50%"
+            cy="50%"
+            innerRadius={55}
+            outerRadius={85}
+            paddingAngle={5}
+            dataKey="value"
+          >
+            <Cell fill="#667eea" />
+            <Cell fill="#f093fb" />
+          </Pie>
+          <Tooltip />
+          <Legend />
+        </PieChart>
+      </ResponsiveContainer>
+    ) : (
+      <div className="text-center py-8">
+        <p className="text-slate-400 text-sm mb-3">Add skills to see your breakdown!</p>
+        <button onClick={() => navigate('/profile/edit')}
+          className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-50">
+          Add Skills
+        </button>
+      </div>
+    )}
+  </div>
+  </div>
+
+
 
               {/* Interested Students */}
               <InterestedStudents />
