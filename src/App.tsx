@@ -27,6 +27,7 @@ const Schedule = lazy(() => import("./pages/Schedule"));
 const EditProfile = lazy(() => import("./pages/EditProfile"));
 const InterestedStudents = lazy(() => import("./pages/InterestedStudents"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const SkillsVisualization = lazy(() => import("./pages/SkillsVisualization"));
 
 const queryClient = new QueryClient();
 
@@ -62,6 +63,7 @@ const App = () => (
           <Route path="/interested-students" element={<ProtectedRoute><InterestedStudents /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute><AdminRoute><AdminDashboard /></AdminRoute></ProtectedRoute>} />
           <Route path="/reviews/:userId" element={<ReviewsPage />} />
+          <Route path="/skills-visualization" element={<ProtectedRoute><SkillsVisualization /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

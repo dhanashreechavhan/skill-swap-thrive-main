@@ -425,119 +425,28 @@ const Dashboard = () => {
                 )}
               </div>
 
-              {/* Learning Progress */}
-              <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center">
-                    <TrendingUp className="w-5 h-5 text-indigo-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-black text-slate-900">Learning Progress</h3>
-                    <p className="text-xs text-slate-500">Track your skill development</p>
-                  </div>
-                </div>
-                {getLearningProgress().length > 0 ? getLearningProgress().map((skill, index) => (
-                  <div key={index} className="mb-5 last:mb-0">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="font-semibold text-slate-800 text-sm">{skill.name}</span>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${skill.urgency === 'High' ? 'bg-rose-100 text-rose-600' : skill.urgency === 'Medium' ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-600'}`}>
-                          {skill.urgency}
-                        </span>
-                        <span className="text-sm font-black text-violet-600">{skill.progress}%</span>
-                      </div>
-                    </div>
-                    <div className="flex justify-between text-xs text-slate-400 mb-1.5">
-                      <span>Current: {skill.currentLevel}</span>
-                      <span>Target: {skill.targetLevel}</span>
-                    </div>
-                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full transition-all" style={{
-                        width: `${skill.progress}%`,
-                        background: "linear-gradient(90deg, #667eea, #f093fb)"
-                      }} />
-                    </div>
-                  </div>
-                )) : (
-                  <div className="text-center py-8">
-                    <p className="text-slate-400 text-sm mb-3">No learning skills added yet.</p>
-                    <button onClick={() => navigate('/profile/edit')}
-                      className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-50">
-                      Add Learning Skills
-                    </button>
-                  </div>
-                )}
-              </div>
+              
 
-              {/* Skills Visualization Dashboard */}
+              {/* Skills Visualization Button */}
 <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
-  <div className="flex items-center gap-3 mb-6">
-    <div className="w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center">
-      <TrendingUp className="w-5 h-5 text-violet-600" />
-    </div>
-    <div>
-      <h3 className="font-black text-slate-900">Skills Visualization</h3>
-      <p className="text-xs text-slate-500">Your skills at a glance</p>
-    </div>
-  </div>
-
-  {/* Bar Chart - Teaching vs Learning */}
-  <div className="mb-6">
-    <h4 className="text-sm font-bold text-slate-700 mb-3">Teaching vs Learning Skills</h4>
-    <ResponsiveContainer width="100%" height={200}>
-      <BarChart data={[
-        { name: 'Teaching', count: getSkillCount(profile?.skillsTeaching) },
-        { name: 'Learning', count: getSkillCount(profile?.skillsLearning) },
-        { name: 'Sessions', count: upcomingSessions.length },
-      ]}>
-        <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-        <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-        <Tooltip />
-        <Bar dataKey="count" radius={[6, 6, 0, 0]}>
-          <Cell fill="#667eea" />
-          <Cell fill="#f093fb" />
-          <Cell fill="#764ba2" />
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
-  </div>
-
-  {/* Pie Chart - Skill Categories */}
-  <div>
-    <h4 className="text-sm font-bold text-slate-700 mb-3">Skills Breakdown</h4>
-    {profile?.skillsTeaching?.length > 0 || profile?.skillsLearning?.length > 0 ? (
-      <ResponsiveContainer width="100%" height={220}>
-        <PieChart>
-          <Pie
-            data={[
-              { name: 'Teaching', value: getSkillCount(profile?.skillsTeaching) || 1 },
-              { name: 'Learning', value: getSkillCount(profile?.skillsLearning) || 1 },
-            ]}
-            cx="50%"
-            cy="50%"
-            innerRadius={55}
-            outerRadius={85}
-            paddingAngle={5}
-            dataKey="value"
-          >
-            <Cell fill="#667eea" />
-            <Cell fill="#f093fb" />
-          </Pie>
-          <Tooltip />
-          <Legend />
-        </PieChart>
-      </ResponsiveContainer>
-    ) : (
-      <div className="text-center py-8">
-        <p className="text-slate-400 text-sm mb-3">Add skills to see your breakdown!</p>
-        <button onClick={() => navigate('/profile/edit')}
-          className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-50">
-          Add Skills
-        </button>
+  <div className="flex items-center justify-between">
+    <div className="flex items-center gap-3">
+      <div className="w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center">
+        <TrendingUp className="w-5 h-5 text-violet-600" />
       </div>
-    )}
+      <div>
+        <h3 className="font-black text-slate-900">Skills Analytics</h3>
+        <p className="text-xs text-slate-500">View detailed skills visualization</p>
+      </div>
+    </div>
+    <button onClick={() => navigate('/skills-visualization')}
+      className="px-5 py-2.5 text-white font-semibold rounded-2xl flex items-center gap-2"
+      style={{ background: "linear-gradient(135deg, #667eea, #764ba2)" }}>
+      <TrendingUp className="w-4 h-4" /> View Analytics
+    </button>
   </div>
-  </div>
+</div>
+  
 
 
 
