@@ -29,6 +29,7 @@ const InterestedStudents = lazy(() => import("./pages/InterestedStudents"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminAnalytics = lazy(() => import("./pages/AdminAnalytics"));
 const SkillsVisualization = lazy(() => import("./pages/SkillsVisualization"));
+const Certificates = lazy(() => import("./pages/Certificates"));
 
 const queryClient = new QueryClient();
 
@@ -65,6 +66,7 @@ const App = () => (
           <Route path="/admin" element={<ProtectedRoute><AdminRoute><AdminDashboard /></AdminRoute></ProtectedRoute>} />
           <Route path="/admin/analytics" element={<ProtectedRoute><AdminRoute><AdminAnalytics /></AdminRoute></ProtectedRoute>} />
           <Route path="/skills-visualization" element={<ProtectedRoute><SkillsVisualization /></ProtectedRoute>} />
+          <Route path="/certificates" element={<ProtectedRoute><Certificates /></ProtectedRoute>} />
 <Route path="/my-skills" element={<ProtectedRoute><MySkills /></ProtectedRoute>} />
 <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
           <Route path="/reviews/:userId" element={<ReviewsPage />} />

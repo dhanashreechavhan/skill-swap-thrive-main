@@ -517,6 +517,7 @@ const Dashboard = () => {
                     { icon: Calendar, label: "Schedule Session", path: "/schedule", color: "bg-amber-100 text-amber-600" },
                     { icon: Users, label: "Interested Students", path: "/interested-students", color: "bg-emerald-100 text-emerald-600" },
                     { icon: Star, label: "My Reviews", path: `/reviews/${user._id}`, color: "bg-rose-100 text-rose-600" },
+                    { icon: Award, label: "My Certificates", path: "/certificates", color: "bg-yellow-100 text-yellow-600" },
                     { icon: BookOpen, label: "My Skills", path: "/my-skills", color: "bg-teal-100 text-teal-600" },
                     { icon: Crown, label: "Subscription", path: "/subscription", color: "bg-amber-100 text-amber-600" },
 
