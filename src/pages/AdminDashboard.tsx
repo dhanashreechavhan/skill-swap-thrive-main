@@ -6,11 +6,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiService } from '@/lib/api';
-import { Search, Filter, Calendar, MessageSquare, User, Trash2, Activity, Clock, Shield, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Search, Filter, Calendar, MessageSquare, User, Trash2, Activity, Clock, Shield, AlertTriangle, CheckCircle,TrendingUp } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts';
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState<any[]>([]);
   const [skills, setSkills] = useState<any[]>([]);
   const [schedules, setSchedules] = useState<any[]>([]);
@@ -59,6 +61,11 @@ const AdminDashboard = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">Admin Dashboard</h1>
           <p className="text-muted-foreground">Manage users, skills, and monitor activity</p>
+          <button onClick={() => navigate('/admin/analytics')}
+  className="mt-3 px-5 py-2.5 text-white font-semibold rounded-2xl flex items-center gap-2"
+  style={{ background: "linear-gradient(135deg, #667eea, #764ba2)" }}>
+  <TrendingUp className="w-4 h-4" /> View Analytics
+</button>
         </div>
 
         {/* Stats Overview */}
@@ -117,7 +124,7 @@ const AdminDashboard = () => {
             <TabsTrigger value="schedules">Schedules</TabsTrigger>
             <TabsTrigger value="messages">Messages</TabsTrigger>
             <TabsTrigger value="audit">Audit Logs</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            
           </TabsList>
 
 
@@ -420,87 +427,7 @@ const AdminDashboard = () => {
               </CardContent>
             </Card>
           </TabsContent>
-        <TabsContent value="analytics">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Platform Overview</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={250}>
-                    <BarChart data={[
-                      { name: 'Users', count: stats?.userCount || 0 },
-                      { name: 'Skills', count: stats?.skillCount || 0 },
-                      { name: 'Sessions', count: stats?.scheduleCount || 0 },
-                      { name: 'Messages', count: stats?.messageCount || 0 },
-                    ]}>
-                      <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                      <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-                      <Tooltip />
-                      <Bar dataKey="count" radius={[6, 6, 0, 0]}>
-                        <Cell fill="#667eea" />
-                        <Cell fill="#f093fb" />
-                        <Cell fill="#764ba2" />
-                        <Cell fill="#43e97b" />
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Content Breakdown</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={250}>
-                    <PieChart>
-                      <Pie
-                        data={[
-                          { name: 'Users', value: stats?.userCount || 0 },
-                          { name: 'Skills', value: stats?.skillCount || 0 },
-                          { name: 'Sessions', value: stats?.scheduleCount || 0 },
-                          { name: 'Messages', value: stats?.messageCount || 0 },
-                        ]}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={55}
-                        outerRadius={85}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        <Cell fill="#667eea" />
-                        <Cell fill="#f093fb" />
-                        <Cell fill="#764ba2" />
-                        <Cell fill="#43e97b" />
-                      </Pie>
-                      <Tooltip />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-              <Card className="md:col-span-2">
-                <CardHeader>
-                  <CardTitle>Quick Stats Summary</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {[
-                      { label: 'Total Users', value: stats?.userCount || 0, color: 'bg-violet-100 text-violet-700' },
-                      { label: 'Total Skills', value: stats?.skillCount || 0, color: 'bg-pink-100 text-pink-700' },
-                      { label: 'Total Sessions', value: stats?.scheduleCount || 0, color: 'bg-purple-100 text-purple-700' },
-                      { label: 'Total Messages', value: stats?.messageCount || 0, color: 'bg-green-100 text-green-700' },
-                    ].map((item, i) => (
-                      <div key={i} className={`rounded-2xl p-4 ${item.color}`}>
-                        <p className="text-2xl font-black">{item.value}</p>
-                        <p className="text-sm font-medium">{item.label}</p>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
+        
         </Tabs>
       </main>
     </div>
