@@ -14,7 +14,7 @@ const PLANS = {
   },
   pro: {
     name: 'Pro',
-    price: 199,
+    price: 149,
     maxSkills: 10,
     maxMatchesPerMonth: 15,
     features: ['10 skills listing', '15 matches/month', 'Unlimited messaging', 'Verified badge', 'Certificate generation', 'Video sessions']

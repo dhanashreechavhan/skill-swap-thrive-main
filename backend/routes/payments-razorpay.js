@@ -13,13 +13,13 @@ const razorpay = new Razorpay({
 
 // Plan prices in paise (1 rupee = 100 paise)
 const PLAN_PRICES = {
-  pro: 19900,      // ₹199
+  pro: 14900,      // ₹149/week
   premium: 49900,  // ₹499
 };
 
 const PLAN_NAMES = {
-  pro: 'SkillSwap Pro',
-  premium: 'SkillSwap Premium',
+  pro: 'SkillSwap Pro (Weekly)',
+  premium: 'SkillSwap Premium (Monthly)',
 };
 
 // POST /api/payments/create-order
@@ -79,8 +79,9 @@ router.post('/verify', auth, async (req, res) => {
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
+    const validityDays = plan === 'pro' ? 7 : 30;
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 30); // 30 days validity
+    expiresAt.setDate(expiresAt.getDate() + validityDays);
 
     user.subscription = {
       plan,
