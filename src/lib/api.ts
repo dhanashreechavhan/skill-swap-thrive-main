@@ -498,7 +498,24 @@ async verifyPayment(paymentData: any) {
   async adminGetStats() {
     return this.request('/admin/stats');
   }
-}
 
+// Verification endpoints
+  async sendOTP(method: "email" | "phone", value: string) {
+    return this.request('/verification/send-otp', {
+      method: 'POST',
+      body: JSON.stringify({ method, value }),
+    });
+  }
 
+  async verifyOTP(method: "email" | "phone", otp: string) {
+    return this.request('/verification/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify({ method, otp }),
+    });
+  }
+
+  async getVerificationStatus() {
+    return this.request('/verification/status');
+  }
+} 
 export const apiService = new ApiService();

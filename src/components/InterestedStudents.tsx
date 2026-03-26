@@ -249,7 +249,7 @@ const fetchRatings = async (students: InterestedStudent[]) => {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {interestedStudents.map((match) => {
+          {interestedStudents.filter(match => match && match.student && match.skill).map((match) => {
             const quality = getMatchQuality(match.matchScore);
             const isProcessing = processingId === match._id;
             
@@ -257,17 +257,17 @@ const fetchRatings = async (students: InterestedStudent[]) => {
               <div 
                 key={match._id} 
                 className="border border-border rounded-lg p-4 hover:shadow-md transition-shadow"
-              >
+              > 
                 {/* Student Header */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-12 w-12">
-                      <AvatarFallback>
-                        {getInitials(match.student.name)}
-                      </AvatarFallback>
+                      <AvatarFallback> 
+                       {match.student ? getInitials(match.student.name) : '?'}
+                      </AvatarFallback>  
                     </Avatar>
                     <div>
-                      <h3 className="font-semibold text-lg">{match.student.name}</h3>
+                      <h3 className="font-semibold text-lg">{match.student?.name || 'Unknown'}</h3>
                       <div className="flex items-center gap-1 text-sm text-muted-foreground">
                         <MapPin className="h-3 w-3" />
                         {match.student.profile?.location || 'Location not specified'}
@@ -275,7 +275,7 @@ const fetchRatings = async (students: InterestedStudent[]) => {
                       <div className="flex items-center gap-1 text-sm mt-1">
   <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
   {studentRatings[match.student._id]?.avg
-    ? <>
+    ? <> 
         <span className="font-medium text-slate-700">
           {studentRatings[match.student._id].avg.toFixed(1)}
         </span>
@@ -345,7 +345,7 @@ const fetchRatings = async (students: InterestedStudent[]) => {
                     </Button>
                   ) : (
                     <Button 
-                      onClick={() => acceptStudent(match._id, match.student.name)}
+                     onClick={() => acceptStudent(match._id, match.student?.name || 'Student')}
                       disabled={isProcessing}
                       className="flex-1"
                     >
@@ -360,7 +360,7 @@ const fetchRatings = async (students: InterestedStudent[]) => {
                   
                   <Button 
                     variant="outline" 
-                    onClick={() => sendMessage(match.student._id, match.student.name)}
+                   onClick={() => sendMessage(match.student?._id, match.student?.name || 'Student')}
                   >
                     <MessageSquare className="h-4 w-4 mr-2" />
                     Message
@@ -368,7 +368,7 @@ const fetchRatings = async (students: InterestedStudent[]) => {
 
                   <Button 
   variant="outline"
-  onClick={() => navigate(`/reviews/${match.student._id}`)}
+  onClick={() => navigate(`/reviews/${match.student?._id}`)}
 >
   <Star className="h-4 w-4 mr-2" />
   Review

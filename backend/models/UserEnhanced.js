@@ -206,7 +206,17 @@ const userSchema = new mongoose.Schema({
   joinedAt: {
     type: Date,
     default: Date.now
-  }
+  },
+   // ── OTP Verification fields ──────────────────────────────────────────────
+  isVerified:     { type: Boolean, default: false },
+  emailVerified:  { type: Boolean, default: false },
+  phoneVerified:  { type: Boolean, default: false },
+  phone:          { type: String,  default: null },
+  emailOTP:       { type: String,  default: null },
+  emailOTPExpiry: { type: Date,    default: null },
+  phoneOTP:       { type: String,  default: null },
+  phoneOTPExpiry: { type: Date,    default: null },
+  pendingEmail:   { type: String,  default: null }
 }, {
   timestamps: true
 });

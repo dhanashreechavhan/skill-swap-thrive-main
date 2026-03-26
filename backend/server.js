@@ -225,6 +225,7 @@ mongoose.connect(MONGODB_URI)
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const skillRoutes = require('./routes/skills');
+const verificationRoutes = require('./routes/verification');
 const messageRoutes = require('./routes/messages');
 const scheduleRoutes = require('./routes/schedules');
 const adminRoutes = require('./routes/admin');
@@ -255,7 +256,8 @@ app.get('/health', (req, res) => {
 // Routes with specific rate limiting
 app.use('/api/auth', rateLimiters.auth, userRateLimit, authRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/skills', rateLimiters.search, skillRoutes);
+app.use('/api/skills', skillRoutes); 
+app.use('/api/verification', verificationRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/schedules', scheduleRoutes);
 app.use('/api/matching', rateLimiters.search, matchingRoutes);

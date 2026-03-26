@@ -164,6 +164,17 @@ const skillValidation = {
     body('location').optional().trim(),
     body('isRemote').optional(),
     body('pricing').optional(),
+    // Course content fields
+    body('courseContent').optional(),
+    body('courseContent.courseType').optional(),
+    body('courseContent.whatYouWillLearn').optional().trim(),
+    body('courseContent.topics').optional(),
+    body('courseContent.duration').optional().trim(),
+    body('courseContent.sessionsPerWeek').optional(),
+    body('courseContent.sessionDurationMinutes').optional(),
+    body('courseContent.prerequisites').optional().trim(),
+    body('courseContent.isFree').optional(),
+    body('courseContent.pricePerSession').optional(),
     handleValidationErrors
   ],
   

@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
+import VerifyOTP from "./pages/VerifyOTP";
 const ReviewsPage = lazy(() => import("./pages/Reviews"));
 const MySkills = lazy(() => import("./pages/MySkills"));
 const Subscription = lazy(() => import("./pages/Subscription"));
@@ -68,6 +69,7 @@ const App = () => (
           <Route path="/skills-visualization" element={<ProtectedRoute><SkillsVisualization /></ProtectedRoute>} />
           <Route path="/certificates" element={<ProtectedRoute><Certificates /></ProtectedRoute>} />
 <Route path="/my-skills" element={<ProtectedRoute><MySkills /></ProtectedRoute>} />
+<Route path="/verify" element={<VerifyOTP />} />
 <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
           <Route path="/reviews/:userId" element={<ReviewsPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

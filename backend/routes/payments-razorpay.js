@@ -40,6 +40,7 @@ router.post('/create-order', auth, async (req, res) => {
       receipt: `rcpt_${Date.now()}`.slice(0, 40),
       notes: {
         userId: req.user._id.toString(),
+        
         plan,
       },
     });

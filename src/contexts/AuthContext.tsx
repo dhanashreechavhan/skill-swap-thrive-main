@@ -93,8 +93,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       };
       console.log('Setting user after login:', newUser);
+     // CHANGE TO:
       setUser(newUser);
-      return { success: true };
+      return { success: true, needsVerification: true };
     } else {
       console.error('Login failed:', result.error);
       return { success: false, error: result.error };

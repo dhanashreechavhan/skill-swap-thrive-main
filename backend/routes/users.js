@@ -61,7 +61,7 @@ router.get('/search', userValidation.search, async (req, res) => {
 
     // Build query object
     let query = {};
-
+    
     // Search functionality
     if (search) {
       query.$or = [

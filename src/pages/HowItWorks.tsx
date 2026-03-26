@@ -207,7 +207,10 @@ const HowItWorks = () => {
         {/* ══ FAQ ═════════════════════════════════════════════════════════════ */}
         <section className="py-16 container max-w-3xl mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-black text-slate-900 mb-3">Frequently Asked Questions </h2>
+            <h2 className="text-3xl font-black text-slate-900 mb-3">Frequently Asked Questions 
+
+              
+            </h2>
             <p className="text-slate-500">Everything you need to know about SwapLearnThrive</p>
           </div>
           <div className="space-y-3">

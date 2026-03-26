@@ -1,164 +1,133 @@
 const express = require('express');
-const { auth } = require('../middleware/auth');
-const { skillValidation } = require('../middleware/validation');
-const Skill = require('../models/Skill');
 const router = express.Router();
+const Skill = require('../models/Skill');
 
-// Get current user's skills
+// ─── Auth Middleware ──────────────────────────────────────────────────────────
+const { auth } = require('../middleware/auth');
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ⚠️  IMPORTANT: Specific routes like /my-skills MUST come BEFORE /:id routes
+//     If /:id comes first, Express treats "my-skills" as an ID → infinite loading bug!
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── GET /api/skills/my-skills ─────────────────────────────────────────────────
+// Returns all skills that the logged-in user has added (their teaching skills)
 router.get('/my-skills', auth, async (req, res) => {
   try {
-    const skills = await Skill.find({ offeredBy: req.user._id })
-      .populate('offeredBy', 'name email profile')
-      .sort({ createdAt: -1 });
-    
-    res.json({ skills });
-  } catch (error) {
-    console.error('Get user skills error:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    const userId = req.user._id;
+    const skills = await Skill.find({ offeredBy: userId }).sort({ createdAt: -1 });
+    return res.json({ skills });
+  } catch (err) {
+    console.error('Error in GET /my-skills:', err);
+    return res.status(500).json({ message: 'Server error fetching your skills' });
   }
 });
 
-// List all skills with search, filtering, and sorting
-router.get('/', skillValidation.search, async (req, res) => {
+// ── GET /api/skills ───────────────────────────────────────────────────────────
+// Returns all skills with optional filters (for the marketplace/search page)
+router.get('/', async (req, res) => {
   try {
     const {
-      search,
-      category,
-      level,
-      availability,
-      sortBy = 'createdAt',
-      sortOrder = 'desc',
-      page = 1,
-      limit = 20
+      search, category, level, availability,
+      sortBy = 'createdAt', sortOrder = 'desc',
+      page = 1, limit = 20
     } = req.query;
 
-    // Build query object
-    let query = {};
-
-    // Search functionality
+    const filter = {};
+    if (category)    filter.category     = category;
+    if (level)       filter.level        = level;
+    if (availability) filter.availability = availability;
     if (search) {
-      // Escape special regex characters to prevent invalid regex patterns
-      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      query.$or = [
-        { name: { $regex: escapedSearch, $options: 'i' } },
-        { description: { $regex: escapedSearch, $options: 'i' } },
-        { tags: { $in: [new RegExp(escapedSearch, 'i')] } }
+      filter.$or = [
+        { name:        { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { tags:        { $in: [new RegExp(search, 'i')] } }
       ];
     }
 
-    // Category filter
-    if (category && category !== 'all') {
-      query.category = category;
-    }
+    const sort = {};
+    sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
 
-    // Level filter
-    if (level && level !== 'all') {
-      query.level = level;
-    }
+    const skills = await Skill.find(filter)
+      .populate('offeredBy', 'name email avatar')
+      .sort(sort)
+      .limit(Number(limit))
+      .skip((Number(page) - 1) * Number(limit));
 
-    // Availability filter
-    if (availability && availability !== 'all') {
-      query.availability = availability;
-    }
+    const total = await Skill.countDocuments(filter);
 
-    // Build sort object
-    const sortObj = {};
-    sortObj[sortBy] = sortOrder === 'asc' ? 1 : -1;
-
-    // Calculate pagination
-    const pageNum = parseInt(page) || 1;
-    const limitNum = parseInt(limit) || 20;
-    const skip = (pageNum - 1) * limitNum;
-
-    // Execute query with pagination
-    const skills = await Skill.find(query)
-      .populate('offeredBy', 'name email profile')
-      .sort(sortObj)
-      .skip(skip)
-      .limit(limitNum);
-
-    // Get total count for pagination
-    const total = await Skill.countDocuments(query);
-
-    res.json({
+    return res.json({
       skills,
-      pagination: {
-        currentPage: pageNum,
-        totalPages: Math.ceil(total / limitNum),
-        totalItems: total,
-        itemsPerPage: limitNum
-      }
+      total,
+      page:       Number(page),
+      totalPages: Math.ceil(total / Number(limit))
     });
-  } catch (error) {
-    res.status(500).json({ message: 'Server error', error });
+  } catch (err) {
+    console.error('Error in GET /skills:', err);
+    return res.status(500).json({ message: 'Server error fetching skills' });
   }
 });
 
-// Offer a new skill
-router.post('/', auth, skillValidation.create, async (req, res) => {
+// ── POST /api/skills ──────────────────────────────────────────────────────────
+// Creates a new skill for the logged-in user
+router.post('/', auth, async (req, res) => {
   try {
-    const skillData = req.body;
-    skillData.offeredBy = req.user._id;
-    const skill = new Skill(skillData);
+    const userId = req.user._id;
+    const skill = new Skill({
+      ...req.body,
+      offeredBy: userId
+    });
     await skill.save();
-    res.status(201).json(skill);
-  } catch (error) {
-    res.status(500).json({ message: 'Server error', error });
+    return res.status(201).json(skill);
+  } catch (err) {
+    console.error('Error in POST /skills:', err);
+    return res.status(400).json({ message: err.message || 'Error creating skill' });
   }
 });
 
-// Get skill details
-router.get('/:id', skillValidation.getById, async (req, res) => {
+// ── GET /api/skills/:id ───────────────────────────────────────────────────────
+// ⚠️  This MUST come AFTER /my-skills — otherwise "my-skills" is treated as an ID!
+router.get('/:id', async (req, res) => {
   try {
-    const skill = await Skill.findById(req.params.id).populate('offeredBy', 'name email');
-    if (!skill) {
-      return res.status(404).json({ message: 'Skill not found' });
-    }
-    res.json(skill);
-  } catch (error) {
-    res.status(500).json({ message: 'Server error', error });
+    const skill = await Skill.findById(req.params.id)
+      .populate('offeredBy', 'name email avatar');
+    if (!skill) return res.status(404).json({ message: 'Skill not found' });
+    return res.json(skill);
+  } catch (err) {
+    console.error('Error in GET /skills/:id:', err);
+    return res.status(500).json({ message: 'Server error' });
   }
 });
 
-// Update skill
-router.put('/:id', auth, skillValidation.update, async (req, res) => {
+// ── PUT /api/skills/:id ───────────────────────────────────────────────────────
+// Updates a skill (only the owner can update)
+router.put('/:id', auth, async (req, res) => {
   try {
-    const skill = await Skill.findById(req.params.id);
-    if (!skill) {
-      return res.status(404).json({ message: 'Skill not found' });
-    }
-    if (!skill.offeredBy.equals(req.user._id)) {
-      return res.status(403).json({ message: 'Unauthorized' });
-    }
-    Object.assign(skill, req.body);
-    await skill.save();
-    res.json(skill);
-  } catch (error) {
-    res.status(500).json({ message: 'Server error', error });
+    const userId = req.user._id;
+    const skill = await Skill.findOneAndUpdate(
+      { _id: req.params.id, offeredBy: userId },
+      req.body,
+      { new: true, runValidators: true }
+    );
+    if (!skill) return res.status(404).json({ message: 'Skill not found or you are not the owner' });
+    return res.json(skill);
+  } catch (err) {
+    console.error('Error in PUT /skills/:id:', err);
+    return res.status(400).json({ message: err.message || 'Error updating skill' });
   }
 });
 
-// Delete skill
-router.delete('/:id', auth, skillValidation.delete, async (req, res) => {
+// ── DELETE /api/skills/:id ────────────────────────────────────────────────────
+// Deletes a skill (only the owner can delete)
+router.delete('/:id', auth, async (req, res) => {
   try {
-    console.log('Delete skill request for ID:', req.params.id);
-    const skill = await Skill.findById(req.params.id);
-    if (!skill) {
-      console.log('Skill not found:', req.params.id);
-      return res.status(404).json({ message: 'Skill not found' });
-    }
-    if (!skill.offeredBy.equals(req.user._id)) {
-      console.log('Unauthorized delete attempt by user:', req.user._id, 'for skill:', req.params.id);
-      return res.status(403).json({ message: 'Unauthorized' });
-    }
-    
-    // Use deleteOne() instead of deprecated remove()
-    await skill.deleteOne();
-    console.log('Skill deleted successfully:', req.params.id);
-    res.json({ message: 'Skill deleted' });
-  } catch (error) {
-    console.error('Delete skill error:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    const userId = req.user._id;
+    const skill = await Skill.findOneAndDelete({ _id: req.params.id, offeredBy: userId });
+    if (!skill) return res.status(404).json({ message: 'Skill not found or you are not the owner' });
+    return res.json({ message: 'Skill deleted successfully' });
+  } catch (err) {
+    console.error('Error in DELETE /skills/:id:', err);
+    return res.status(500).json({ message: 'Server error deleting skill' });
   }
 });
 
