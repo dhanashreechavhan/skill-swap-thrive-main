@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,14 +20,11 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const from = location.state?.from?.pathname || "/dashboard";
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLocalLoading(true);
 
     const result = await login(email, password);
-
     setLocalLoading(false);
 
     if (result.error) {
@@ -39,23 +37,27 @@ const Login = () => {
     }
 
     toast({
-      title: "Welcome back!",
-      description: "You have successfully logged in.",
+      title: "Welcome back! 👋",
+      description: "Logged in successfully.",
     });
-    // Mark that this navigation is due to a fresh login
+
+    // Mark fresh login so useEffect can redirect
     setJustLoggedIn(true);
   };
 
-  // Navigate after user state changes to authenticated
+  // Redirect after user state is set
   useEffect(() => {
-    // Only redirect after a fresh login, not when visiting /login while already signed in
     if (justLoggedIn && !localLoading && user) {
-      const target = (user as any).isAdmin ? "/admin" : (from || "/dashboard");
-      navigate(target, { replace: true });
+      // ✅ Admins go to admin panel, everyone else goes to /verify first
+      if ((user as any).isAdmin) {
+        navigate("/admin", { replace: true });
+      } else {
+        navigate("/verify", { replace: true });
+      }
     }
-  }, [justLoggedIn, localLoading, from, user]);
+  }, [justLoggedIn, localLoading, user]);
 
-  // If already authenticated and user navigates to /login manually, show options instead of auto-redirecting
+  // Already logged in — show options instead of auto-redirecting
   if (user && !justLoggedIn) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-hero p-4">
@@ -65,8 +67,15 @@ const Login = () => {
             <Button onClick={() => navigate((user as any).isAdmin ? "/admin" : "/dashboard")}>
               Go to {(user as any).isAdmin ? 'Admin' : 'Dashboard'}
             </Button>
-            <Button variant="outline" onClick={() => navigate('/register')}>Register a new account</Button>
-            <Button variant="ghost" onClick={() => { /* quick switch: clear token and reload login */ apiService.logout(); window.location.href = '/login'; }}>Log out to switch accounts</Button>
+            <Button variant="outline" onClick={() => navigate('/register')}>
+              Register a new account
+            </Button>
+            <Button variant="ghost" onClick={() => {
+              apiService.logout();
+              window.location.href = '/login';
+            }}>
+              Log out to switch accounts
+            </Button>
           </div>
         </div>
       </div>
@@ -76,6 +85,7 @@ const Login = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-hero p-4">
       <div className="w-full max-w-md">
+
         {/* Logo */}
         <div className="flex items-center justify-center mb-8">
           <Link to="/" className="flex items-center space-x-2">
@@ -93,9 +103,8 @@ const Login = () => {
               Sign in to your account to continue learning
             </CardDescription>
           </CardHeader>
-          
+
           <CardContent className="space-y-6">
-            {/* Email Login Form */}
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -108,7 +117,7 @@ const Login = () => {
                   required
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <Input
@@ -131,19 +140,19 @@ const Login = () => {
                 </Link>
               </div>
 
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="w-full bg-gradient-primary hover:opacity-90"
-                disabled={isLoading}
+                disabled={isLoading || localLoading}
               >
-                {isLoading ? "Signing in..." : "Sign In"}
+                {(isLoading || localLoading) ? "Signing in..." : "Sign In"}
               </Button>
             </form>
           </CardContent>
 
           <CardFooter className="text-center text-sm text-muted-foreground">
             Don't have an account?{" "}
-            <Link to="/register" className="text-primary hover:underline font-medium">
+            <Link to="/register" className="text-primary hover:underline font-medium ml-1">
               Sign up
             </Link>
           </CardFooter>

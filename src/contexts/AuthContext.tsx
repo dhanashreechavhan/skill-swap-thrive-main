@@ -17,7 +17,7 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string; needsVerification?: boolean }>;
   register: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   checkAuth: () => Promise<void>;
@@ -47,13 +47,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const token = apiService.getToken();
     if (token) {
       try {
-        // Verify token by fetching user profile
         const result = await apiService.getProfile();
         if (result.data) {
           const userData = result.data as User;
-          // Check if user is banned
           if (userData.profile?.isBanned) {
-            // User is banned, log them out
             apiService.removeToken();
             setUser(null);
             alert('Your account has been banned. Please contact support.');
@@ -61,14 +58,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setUser(userData);
           }
         } else {
-          // Token is invalid, clear it
           apiService.removeToken();
           setUser(null);
         }
       } catch (error) {
         console.error('Auth check error:', error);
-        // If there's an error, don't clear the token immediately
-        // The user might be in the middle of registration
       }
     }
     setIsLoading(false);
@@ -80,8 +74,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsLoading(false);
 
     if (result.data) {
-      // Set user data directly from login response
-      const userData = result.data.user;
+      const userData = (result.data as any).user;
       const newUser = {
         _id: userData.id,
         name: userData.name,
@@ -92,22 +85,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           profileCompletion: 0
         }
       };
-      console.log('Setting user after login:', newUser);
-     // CHANGE TO:
       setUser(newUser);
       return { success: true, needsVerification: true };
     } else {
-      console.error('Login failed:', result.error);
       return { success: false, error: result.error };
     }
   };
-  
-  // Add this to ensure user state updates after token is set
-  useEffect(() => {
-    if (apiService.getToken()) {
-      checkAuth();
-    }
-  }, []);
 
   const register = async (name: string, email: string, password: string) => {
     setIsLoading(true);
@@ -115,8 +98,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsLoading(false);
 
     if (result.data) {
-      // Set user data directly from registration response
-      const userData = result.data.user;
+      const userData = (result.data as any).user;
       const newUser = {
         _id: userData.id,
         name: userData.name,
@@ -126,11 +108,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           profileCompletion: 0
         }
       };
-      console.log('Setting user after registration:', newUser);
       setUser(newUser);
       return { success: true };
     } else {
-      console.error('Registration failed:', result.error);
       return { success: false, error: result.error };
     }
   };
