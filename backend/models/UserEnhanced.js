@@ -207,6 +207,13 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
+
+  documentType:            { type: String, enum: ['aadhaar', 'college_id'], default: null },
+  documentPath:            { type: String, default: null },
+  documentStatus:          { type: String, enum: ['pending', 'approved', 'rejected'], default: null },
+  documentSubmittedAt:     { type: Date, default: null },
+  documentRejectionReason: { type: String, default: null },
+
    // ── OTP Verification fields ──────────────────────────────────────────────
   isVerified:     { type: Boolean, default: false },
   emailVerified:  { type: Boolean, default: false },

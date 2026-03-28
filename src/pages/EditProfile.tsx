@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { X, Upload, Save, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
+import VerificationStatus from "@/components/VerificationStatus";
 
 const EditProfile = () => {
   const navigate = useNavigate();
@@ -213,6 +214,7 @@ const EditProfile = () => {
   }
 
   return (
+
     <div className="min-h-screen bg-background">
       <Header isLoggedIn={true} />
 
@@ -250,6 +252,12 @@ const EditProfile = () => {
             </CardContent>
           </Card>
         </div>
+        {/* Verification Status */}
+        <div className="mb-6">
+          <VerificationStatus />
+        </div>
+
+        
 
         <form onSubmit={handleSubmit}>
           <Card>
